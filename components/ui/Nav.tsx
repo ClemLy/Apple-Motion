@@ -83,24 +83,16 @@ export function Nav() {
     };
   }, []);
 
-  const links = [
-    { href: "#iphone", label: t.nav.products },
-    { href: "#neo", label: t.nav.craft },
-    { href: "#footer", label: t.nav.about },
-  ];
-
-  const current = active >= 0 ? CATALOGUE[active] : null;
-
   return (
     <header
       data-theme-aware
       className={`fixed inset-x-0 top-0 z-50 transition-[padding,background-color,backdrop-filter,color] duration-500 ease-out ${
-        condensed ? "py-3 backdrop-blur-xl" : "py-5"
+        condensed ? "py-3 backdrop-blur-2xl backdrop-saturate-150" : "py-5"
       } ${
         overDark
           ? "text-white [--line:rgb(255_255_255/0.18)] [--ink-2:rgb(255_255_255/0.55)] [--ink:#ffffff]"
           : ""
-      } ${condensed ? (overDark ? "bg-[rgb(11_11_13/0.55)]" : "bg-[rgb(255_255_255/0.38)]") : ""}`}
+      } ${condensed ? (overDark ? "bg-[rgb(11_11_13/0.6)]" : "bg-[rgb(255_255_255/0.62)]") : ""}`}
     >
       <a
         href="#main"
@@ -110,37 +102,42 @@ export function Nav() {
       </a>
 
       <div className="mx-auto flex max-w-[1560px] items-center justify-between gap-6 px-6 md:px-10">
-        <a href="#top" className="flex items-center gap-2.5 text-ink" aria-label="Apple Motion">
+        <a href="#top" className="flex shrink-0 items-center gap-2.5 text-ink" aria-label="Apple Motion">
           <Mark className="h-[22px] w-[22px]" />
           <span className="hidden text-[13px] font-semibold tracking-[-0.015em] sm:block">
             Apple Motion
           </span>
         </a>
 
-        {/* Where you are, not just where you can go. The index reads as a page
-            number, which is the honest description of what a section is here. */}
-        <div className="hidden min-w-0 items-center gap-3 md:flex" aria-hidden="true">
-          <span className="tech-label text-ink-2">{t.nav.index}</span>
-          <span className="h-px w-6 bg-line" />
-          <span className="tech-label tabular-nums text-ink">
-            {current ? current.stack.join(" ") : "—"}
-          </span>
-          <span className="tech-label text-ink-2">
-            {current ? `${String(active + 1).padStart(2, "0")}/0${CATALOGUE.length}` : ""}
-          </span>
-        </div>
-
-        <nav className="hidden items-center gap-7 lg:flex" aria-label={t.nav.products}>
-          {links.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="group relative text-[12.5px] font-medium text-ink-2 transition-colors duration-300 hover:text-ink"
-            >
-              {link.label}
-              <span className="absolute -bottom-1 left-0 h-px w-full origin-right scale-x-0 bg-current transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:origin-left group-hover:scale-x-100" />
-            </a>
-          ))}
+        {/* The numbered pager doubles as the site's only nav: click a number
+            to jump straight to that product, and the active one expands to
+            name itself — an index you can act on, not just read. */}
+        <nav
+          className="hidden min-w-0 items-center gap-1 md:flex"
+          aria-label={t.nav.products}
+        >
+          {CATALOGUE.map((entry, i) => {
+            const isActive = i === active;
+            return (
+              <a
+                key={entry.id}
+                href={`#${entry.anchor}`}
+                aria-current={isActive ? "true" : undefined}
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 transition-colors duration-300 ${
+                  isActive ? "text-ink" : "text-ink-2 hover:text-ink"
+                }`}
+              >
+                <span className="tech-label tabular-nums">{String(i + 1).padStart(2, "0")}</span>
+                <span
+                  className={`overflow-hidden whitespace-nowrap text-[12.5px] font-medium tracking-[-0.01em] transition-[max-width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    isActive ? "max-w-40 opacity-100" : "max-w-0 opacity-0"
+                  }`}
+                >
+                  {entry.stack.join(" ")}
+                </span>
+              </a>
+            );
+          })}
         </nav>
 
         <LanguageSwitch />

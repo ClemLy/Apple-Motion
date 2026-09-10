@@ -76,7 +76,7 @@ export const SHOTS: Record<ProductId, RenderShot> = {
   // one, which is the frame most visitors actually see.
   "macbook-m5": {
     frames: FRAMES,
-    distance: 9,
+    distance: 11,
     fov: 26,
     size: 3.3,
     lift: -0.15,

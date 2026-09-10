@@ -14,13 +14,14 @@ import { HERO_PRODUCT } from "@/lib/catalogue";
 export const HERO_RANGE: [number, number] = [0, 0.16];
 
 /**
- * Five viewport heights.
+ * Viewport heights the hero's scroll timeline spans.
  *
- * The previous hero ran its whole idea inside two, which meant the title split
- * and the product arrived almost in the same gesture — the move was over before
- * it registered. Length is the material this kind of sequence is made of.
+ * Was 500 — carrying the title split and product arrival over that much scroll
+ * read as sluggish, the opposite failure from the two-viewport version this
+ * replaced (where the same beats were over before they registered). 340 keeps
+ * the sequence legible without asking for that much scrolling to get through it.
  */
-const LENGTH = 500;
+const LENGTH = 340;
 
 export function Hero() {
   const { t } = useI18n();
@@ -48,7 +49,7 @@ export function Hero() {
         return;
       }
 
-      gsap.set(stage.current, { scale: 0.34, autoAlpha: 0 });
+      gsap.set(stage.current, { scale: 0.3, autoAlpha: 0, rotateZ: -5, filter: "blur(26px)" });
       gsap.set([railLeft.current, railRight.current], { autoAlpha: 0 });
       gsap.set(seam.current, { scaleX: 0 });
 
@@ -57,7 +58,10 @@ export function Hero() {
           trigger: element,
           start: "top top",
           end: "bottom bottom",
-          scrub: 0.6,
+          // Low scrub: the scene stays glued to the wheel/trackpad instead of
+          // trailing it. A hero that visibly lags its own scroll input reads as
+          // sluggish no matter how the individual tweens are eased.
+          scrub: 0.25,
         },
       });
 
@@ -76,8 +80,12 @@ export function Hero() {
 
         if (Math.abs(offset) < 0.001) {
           timeline
-            .to(line, { scale: 2.6, autoAlpha: 0, ease: "power2.in", duration: 0.3 }, 0.1)
-            .to(line, { letterSpacing: "0.06em", ease: "none", duration: 0.3 }, 0.1);
+            .to(line, { scale: 3.4, autoAlpha: 0, ease: "power2.in", duration: 0.3 }, 0.1)
+            .to(line, { letterSpacing: "0.08em", ease: "none", duration: 0.3 }, 0.1)
+            // A touch of motion blur as the centre line rushes toward the
+            // camera — the same trick that keeps a fast pan from reading as a
+            // hard, unnatural cut between two static frames.
+            .to(line, { filter: "blur(14px)", ease: "power2.in", duration: 0.3 }, 0.1);
           return;
         }
 
@@ -85,13 +93,14 @@ export function Hero() {
           .to(
             line,
             {
-              yPercent: offset * 300,
-              scale: 1 + Math.abs(offset) * 0.55,
+              yPercent: offset * 360,
+              scale: 1 + Math.abs(offset) * 0.75,
               ease: "power1.in",
               duration: 0.34,
             },
             0.08
           )
+          .to(line, { filter: "blur(18px)", ease: "power1.in", duration: 0.26 }, 0.08)
           .to(line, { autoAlpha: 0, ease: "none", duration: 0.14 }, 0.24);
       });
 
@@ -100,9 +109,17 @@ export function Hero() {
         .to(chrome.current, { autoAlpha: 0, y: -20, ease: "none", duration: 0.14 }, 0)
         .to(foot.current, { autoAlpha: 0, y: 32, ease: "none", duration: 0.16 }, 0.02)
 
-        // The product comes up through the gap the title just opened.
+        // The product comes up through the gap the title just opened, arriving
+        // out of focus and resolving sharp — it materialises rather than
+        // simply fading up in front of the reader.
         .to(stage.current, { autoAlpha: 1, ease: "none", duration: 0.14 }, 0.14)
-        .to(stage.current, { scale: 1, ease: "power2.out", duration: 0.38 }, 0.12)
+        .to(stage.current, { filter: "blur(0px)", ease: "power2.out", duration: 0.34 }, 0.15)
+        .to(stage.current, { rotateZ: 0, ease: "power3.out", duration: 0.4 }, 0.13)
+        // The scale overshoots well past its resting size before settling
+        // back — a cheap stand-in for a spring's momentum, so the arrival
+        // reads as something with weight rather than a flat ease-out.
+        .to(stage.current, { scale: 1.09, ease: "power2.out", duration: 0.32 }, 0.12)
+        .to(stage.current, { scale: 1, ease: "power2.inOut", duration: 0.18 }, 0.44)
 
         // Two rails of technical text drift past at different rates while the
         // product turns. They are the only thing on screen still moving, which

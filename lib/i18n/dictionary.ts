@@ -16,10 +16,7 @@ export const en = {
 
   nav: {
     products: "Products",
-    craft: "Craft",
-    about: "About",
     skip: "Skip to content",
-    index: "Index",
   },
 
   loader: {
@@ -70,7 +67,6 @@ export const en = {
         { label: "Video", value: "4K120 Dolby Vision" },
         { label: "Weight", value: "221 g" },
       ],
-      cta: "Learn more",
     },
 
     "macbook-m5": {
@@ -99,7 +95,6 @@ export const en = {
         { label: "Thickness", value: "15.5 mm" },
         { label: "Weight", value: "1.55 kg" },
       ],
-      cta: "Learn more",
     },
 
     "airpods-max": {
@@ -128,7 +123,6 @@ export const en = {
         { label: "Battery", value: "20 hours" },
         { label: "Weight", value: "384 g" },
       ],
-      cta: "Learn more",
     },
 
     "macbook-neo": {
@@ -157,7 +151,6 @@ export const en = {
         { label: "Battery", value: "18 hours" },
         { label: "Keyboard", value: "Full-height, backlit" },
       ],
-      cta: "Learn more",
     },
 
     "airpods-pro": {
@@ -186,12 +179,11 @@ export const en = {
         { label: "Case", value: "USB-C, MagSafe, speaker" },
         { label: "Rating", value: "IP54, dust and water" },
       ],
-      cta: "Learn more",
     },
   },
 
   footer: {
-    title: ["Crafted", "by", "Clémentin"],
+    title: ["Crafted", "by", "Clémentin LY"],
     subtitle: "An independent exploration of product design on the web.",
     cta: "See the portfolio",
     marquee: "Apple Motion · Crafted in detail · Apple Motion · Crafted in detail ·",
@@ -215,10 +207,7 @@ export const fr: Dictionary = {
 
   nav: {
     products: "Produits",
-    craft: "Fabrication",
-    about: "À propos",
     skip: "Aller au contenu",
-    index: "Sommaire",
   },
 
   loader: {
@@ -267,7 +256,6 @@ export const fr: Dictionary = {
         { label: "Vidéo", value: "4K120 Dolby Vision" },
         { label: "Poids", value: "221 g" },
       ],
-      cta: "En savoir plus",
     },
 
     "macbook-m5": {
@@ -296,7 +284,6 @@ export const fr: Dictionary = {
         { label: "Épaisseur", value: "15,5 mm" },
         { label: "Poids", value: "1,55 kg" },
       ],
-      cta: "En savoir plus",
     },
 
     "airpods-max": {
@@ -325,7 +312,6 @@ export const fr: Dictionary = {
         { label: "Autonomie", value: "20 heures" },
         { label: "Poids", value: "384 g" },
       ],
-      cta: "En savoir plus",
     },
 
     "macbook-neo": {
@@ -354,7 +340,6 @@ export const fr: Dictionary = {
         { label: "Autonomie", value: "18 heures" },
         { label: "Clavier", value: "Pleine hauteur, rétroéclairé" },
       ],
-      cta: "En savoir plus",
     },
 
     "airpods-pro": {
@@ -383,12 +368,11 @@ export const fr: Dictionary = {
         { label: "Boîtier", value: "USB-C, MagSafe, haut-parleur" },
         { label: "Indice", value: "IP54, poussière et eau" },
       ],
-      cta: "En savoir plus",
     },
   },
 
   footer: {
-    title: ["Conçu", "par", "Clémentin"],
+    title: ["Conçu", "par", "Clémentin LY"],
     subtitle: "Une exploration indépendante du design produit sur le web.",
     cta: "Voir le portfolio",
     marquee: "Apple Motion · Conçu dans le détail · Apple Motion · Conçu dans le détail ·",
