@@ -22,7 +22,10 @@ const MODEL_DIR = "public/models";
 // Sized against what a visitor actually waits for. Only one product is fetched
 // at a time and the coarse pass — about an eighth of a sequence — is enough to
 // scrub, so the felt cost of a 5 MB section is closer to 600 KB.
-const PER_PRODUCT_MB = 7;
+// Nine, not seven, because the hero product is deliberately delivered at a
+// higher resolution than the rest: the opening zooms it well past its resting
+// size, and that is the one place on the page where a soft frame is obvious.
+const PER_PRODUCT_MB = 9;
 const TOTAL_MB = 24;
 
 const mb = (bytes) => bytes / 1048576;

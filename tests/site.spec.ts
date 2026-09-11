@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 /** Waits for the loading curtain to hand over to the page. */
 async function ready(page: Page) {
@@ -7,8 +8,32 @@ async function ready(page: Page) {
   await page.waitForFunction(() => document.querySelector("canvas") !== null, null, {
     timeout: 60_000,
   });
+  // The loader covers the whole page, pointer included, until it lifts.
+  await expect(page.getByRole("status")).toBeHidden({ timeout: 60_000 });
   // The first coarse pass of frames has to arrive before anything is drawn.
   await page.waitForTimeout(4_000);
+}
+
+/** Scrolls a section's stage into its held phase. */
+async function visit(page: Page, id: string) {
+  await page.locator(`#${id}`).evaluate((element) => {
+    window.scrollTo({
+      top: element.getBoundingClientRect().top + window.scrollY + window.innerHeight * 1.5,
+      behavior: "instant",
+    });
+  });
+  await page.waitForTimeout(3_500);
+}
+
+/** Whether a product section's own canvas is showing frames or still waiting. */
+function stageState(page: Page, id: string) {
+  return page.evaluate(
+    (anchor) =>
+      document
+        .querySelector(`#${anchor} [data-copy-column]`)
+        ?.parentElement?.querySelector("canvas")?.dataset.state ?? null,
+    id
+  );
 }
 
 /**
@@ -51,9 +76,24 @@ async function canvasSample(page: Page) {
   });
 }
 
+/**
+ * Scrolls to a fraction of the way down the page and lets the scrub catch up.
+ *
+ * Nothing is sampled at scroll zero any more: the hero deliberately opens on
+ * type alone and throws the product in from almost nothing, so the opening
+ * frame has no product on it by design.
+ */
+async function scrollTo(page: Page, fraction: number) {
+  await page.evaluate((f) => {
+    window.scrollTo({ top: window.innerHeight * f, behavior: "instant" });
+  }, fraction);
+  await page.waitForTimeout(1_800);
+}
+
 test.describe("Apple Motion", () => {
   test("loads, dismisses the loader and draws a product frame", async ({ page }) => {
     await ready(page);
+    await scrollTo(page, 1.4);
 
     const frame = await canvasSample(page);
     expect(frame, "no visible product canvas").not.toBeNull();
@@ -65,10 +105,16 @@ test.describe("Apple Motion", () => {
   test("scrolling turns the product", async ({ page }) => {
     await ready(page);
 
+    // Both samples are taken after the hero has thrown the product into frame,
+    // so the comparison is between two rotations rather than between an empty
+    // stage and a full one.
+    await scrollTo(page, 1.4);
     const before = await canvasSample(page);
-    await page.evaluate(() => window.scrollTo({ top: 2400, behavior: "instant" }));
-    await page.waitForTimeout(2_000);
+    await scrollTo(page, 2.6);
     const after = await canvasSample(page);
+
+    expect(before, "no product drawn at the first sample").not.toBeNull();
+    expect(after, "no product drawn at the second sample").not.toBeNull();
 
     // The scrub is the whole point of the page: a different scroll position has
     // to put a different frame on the canvas.
@@ -127,6 +173,35 @@ test.describe("Apple Motion", () => {
       return offenders;
     });
     expect(clipped).toEqual([]);
+
+    // Two failures the check above cannot see, because nothing clips them: a
+    // spec value squeezed beside a long label spilling past its row, and the
+    // giant word behind a product running off the top or bottom of the frame.
+    const spilled = await page.evaluate(() => {
+      const offenders: string[] = [];
+      const inside = (inner: DOMRect, outer: DOMRect) =>
+        inner.left >= outer.left - 1 &&
+        inner.right <= outer.right + 1 &&
+        inner.top >= outer.top - 1 &&
+        inner.bottom <= outer.bottom + 1;
+
+      for (const value of document.querySelectorAll("dd")) {
+        const row = value.parentElement;
+        if (row && !inside(value.getBoundingClientRect(), row.getBoundingClientRect())) {
+          offenders.push(`dd: ${value.textContent}`);
+        }
+      }
+      for (const word of document.querySelectorAll<HTMLElement>("[data-feature-word]")) {
+        const stage = word.closest<HTMLElement>(".sticky");
+        // Not rendered on narrow screens.
+        if (!stage || word.offsetParent === null) continue;
+        if (!inside(word.getBoundingClientRect(), stage.getBoundingClientRect())) {
+          offenders.push(`word: ${word.textContent}`);
+        }
+      }
+      return offenders;
+    });
+    expect(spilled).toEqual([]);
   });
 
   test("the room changes colour as products take over", async ({ page }) => {
@@ -144,6 +219,87 @@ test.describe("Apple Motion", () => {
 
     expect(first).not.toBe("");
     expect(last).not.toBe(first);
+  });
+
+  test("downloads only the opening product before the visitor scrolls", async ({ page }) => {
+    const requested = new Set<string>();
+    page.on("request", (request) => {
+      const match = request.url().match(/\/sequences\/([^/]+)\/\d+\.webp/);
+      if (match) requested.add(match[1]);
+    });
+
+    await ready(page);
+
+    // All five sequences together are around 24 MB. The page once fetched every
+    // one of them in its first second because each player loaded on mount.
+    expect([...requested]).toEqual(["airpods-max"]);
+  });
+
+  test("a section left behind redraws when the visitor comes back", async ({ page }) => {
+    await ready(page);
+
+    await visit(page, "iphone");
+    await expect.poll(() => stageState(page, "iphone"), { timeout: 20_000 }).toBe("frame");
+
+    // Far enough away that the iPhone's frames are handed back to the browser.
+    await visit(page, "airpods-pro");
+    await visit(page, "iphone");
+
+    await expect.poll(() => stageState(page, "iphone"), { timeout: 20_000 }).toBe("frame");
+  });
+
+  test("the line-up leads back to each product", async ({ page }) => {
+    await ready(page);
+
+    const card = page.locator('#lineup a[href="#macbook"]');
+    await card.scrollIntoViewIfNeeded();
+    await card.focus();
+    await page.keyboard.press("Enter");
+
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const box = document.getElementById("macbook")!.getBoundingClientRect();
+            return box.top <= window.innerHeight && box.bottom >= 0;
+          }),
+        { timeout: 10_000 }
+      )
+      .toBe(true);
+  });
+
+  test("the cursor answers the product and the controls", async ({ page, isMobile }) => {
+    test.skip(isMobile, "There is no pointer to replace on a touch screen.");
+    await ready(page);
+    await scrollTo(page, 1.4);
+
+    const ring = page.locator(".cursor-ring");
+    const product = await page.locator('#top canvas[data-cursor="product"]').boundingBox();
+    expect(product, "the hero product is not on screen").not.toBeNull();
+
+    await page.mouse.move(product!.x + product!.width / 2, product!.y + product!.height / 2);
+    await expect(ring).toHaveAttribute("data-state", "product");
+
+    const control = await page.getByRole("button", { name: "fr", exact: true }).boundingBox();
+    await page.mouse.move(control!.x + control!.width / 2, control!.y + control!.height / 2);
+    await expect(ring).toHaveAttribute("data-state", "link");
+  });
+
+  test("meets WCAG AA at the opening and at the sign-off", async ({ page }) => {
+    await ready(page);
+
+    const audit = async () =>
+      (
+        await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+          .analyze()
+      ).violations.map((violation) => `${violation.id} (${violation.nodes.length})`);
+
+    expect(await audit()).toEqual([]);
+
+    await page.locator("#footer").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(2_500);
+    expect(await audit()).toEqual([]);
   });
 
   test("exposes a skip link and a labelled language control", async ({ page }) => {

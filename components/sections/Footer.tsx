@@ -7,12 +7,14 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useI18n } from "@/lib/i18n/context";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { Mark } from "@/components/ui/Nav";
+import { Curtain } from "@/components/ui/Curtain";
 
 const PORTFOLIO_URL = "https://clementin-portfolio.vercel.app/";
 
 export function Footer() {
   const { t } = useI18n();
   const root = useRef<HTMLElement>(null);
+  const letters = useRef<(HTMLSpanElement | null)[]>([]);
 
   useLayoutEffect(() => {
     const element = root.current;
@@ -33,17 +35,92 @@ export function Footer() {
     return () => ctx.revert();
   }, [t]);
 
+  /**
+   * The sign-off leans away from the pointer.
+   *
+   * Each letter is its own element, nudged along the line from the cursor to
+   * its own centre and eased back the instant that line passes. It is the
+   * one moment on the page where the type itself, not a layer behind it,
+   * answers the hand — fitting for the last thing a visitor reads.
+   *
+   * Watched for rather than always wired up: a pointermove listener that
+   * reads every letter's position is not something the rest of the page
+   * should pay for while the footer is nowhere near the viewport.
+   */
+  useLayoutEffect(() => {
+    const element = root.current;
+    if (!element) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const RADIUS = 130;
+    const REACH = 22;
+    let movers: { node: HTMLSpanElement; x: (v: number) => void; y: (v: number) => void }[] = [];
+
+    const onMove = (event: PointerEvent) => {
+      for (const mover of movers) {
+        const box = mover.node.getBoundingClientRect();
+        const dx = box.left + box.width / 2 - event.clientX;
+        const dy = box.top + box.height / 2 - event.clientY;
+        const dist = Math.hypot(dx, dy);
+        if (dist > RADIUS || dist < 1) {
+          mover.x(0);
+          mover.y(0);
+          continue;
+        }
+        const strength = (1 - dist / RADIUS) * REACH;
+        mover.x((dx / dist) * strength);
+        mover.y((dy / dist) * strength);
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          movers = letters.current.flatMap((node) =>
+            node
+              ? [
+                  {
+                    node,
+                    x: gsap.quickTo(node, "x", { duration: 0.5, ease: "power3.out" }),
+                    y: gsap.quickTo(node, "y", { duration: 0.5, ease: "power3.out" }),
+                  },
+                ]
+              : []
+          );
+          window.addEventListener("pointermove", onMove, { passive: true });
+        } else {
+          window.removeEventListener("pointermove", onMove);
+          for (const mover of movers) {
+            mover.x(0);
+            mover.y(0);
+          }
+          movers = [];
+        }
+      },
+      { rootMargin: "10%" }
+    );
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("pointermove", onMove);
+    };
+  }, [t]);
+
   return (
     // Opaque and dark by design: after five bright rooms the page needs a floor
     // to land on, and the change of key is what tells you the scroll is over.
-    <footer id="footer" ref={root} className="relative z-10 bg-[#0b0b0d] text-white">
+    <footer id="footer" ref={root} data-dark-room className="relative z-10 bg-[#0b0b0d] text-white">
+      <Curtain color="#0b0b0d" apex={0.5} />
+
       {/* A band of running text across the seam. It states what the site is,
           which is the one piece of information a visitor cannot infer from
           looking at it. */}
       <div className="overflow-hidden border-b border-white/10 py-4">
         <div className="marquee-track">
           {[0, 1].map((copy) => (
-            <span key={copy} className="tech-label flex shrink-0 text-white/35" aria-hidden={copy === 1}>
+            <span key={copy} className="tech-label flex shrink-0 text-white/60" aria-hidden={copy === 1}>
               {Array.from({ length: 4 }, (_, i) => (
                 <span key={i} className="px-6">
                   {t.footer.marquee}
@@ -71,7 +148,17 @@ export function Footer() {
                     i === t.footer.title.length - 1 ? "text-white/0 [-webkit-text-stroke:1.4px_rgb(255_255_255/0.85)]" : ""
                   }`}
                 >
-                  {line}
+                  {Array.from(line).map((char, j) => (
+                    <span
+                      key={j}
+                      ref={(node) => {
+                        letters.current[i * 100 + j] = node;
+                      }}
+                      className="inline-block will-change-transform"
+                    >
+                      {char === " " ? " " : char}
+                    </span>
+                  ))}
                 </span>
               </span>
             ))}
@@ -109,11 +196,11 @@ export function Footer() {
             </div>
             <dl className="mt-6 space-y-3">
               <div className="flex items-baseline justify-between gap-4 border-b border-white/10 pb-2">
-                <dt className="tech-label text-white/35">{t.footer.typeLabel}</dt>
+                <dt className="tech-label text-white/60">{t.footer.typeLabel}</dt>
                 <dd className="text-[12px] text-white/70">{t.footer.typeValue}</dd>
               </div>
               <div className="flex items-baseline justify-between gap-4 border-b border-white/10 pb-2">
-                <dt className="tech-label text-white/35">{t.footer.yearLabel}</dt>
+                <dt className="tech-label text-white/60">{t.footer.yearLabel}</dt>
                 <dd className="text-[12px] tabular-nums text-white/70">
                   {new Date().getFullYear()}
                 </dd>
@@ -122,14 +209,14 @@ export function Footer() {
           </div>
 
           <div className="md:col-span-4">
-            <p className="tech-label text-white/35">{t.footer.colophon}</p>
+            <p className="tech-label text-white/60">{t.footer.colophon}</p>
             <p className="mt-4 max-w-[40ch] text-[12.5px] leading-[1.7] text-white/55">
               {t.footer.tech}
             </p>
           </div>
 
           <div className="md:col-span-5">
-            <p className="max-w-[54ch] text-[11.5px] leading-[1.75] text-white/35">
+            <p className="max-w-[54ch] text-[11.5px] leading-[1.75] text-white/60">
               {t.footer.disclaimer}
             </p>
           </div>
@@ -139,7 +226,7 @@ export function Footer() {
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="group flex items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-white/45 uppercase transition-colors hover:text-white"
+            className="group flex items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase transition-colors hover:text-white"
           >
             {t.footer.backToTop}
             <svg

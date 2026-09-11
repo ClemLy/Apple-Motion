@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { applyRoom } from "./theme";
 import { getSequence, retainOnly } from "./sequence";
 import type { ProductId } from "./products";
-import { CATALOGUE, ENTRY_BY_ID } from "./catalogue";
+import { CATALOGUE, ENTRY_BY_ID, roomOf } from "./catalogue";
 
 /**
  * Ties one section's scroll range to its product sequence.
@@ -24,6 +24,8 @@ export function useSectionScroll({
   product,
   progress,
   range = [0, 1],
+  curve,
+  retain,
   onActive,
 }: {
   ref: RefObject<HTMLElement | null>;
@@ -33,6 +35,25 @@ export function useSectionScroll({
   /** Slice of the sequence this section plays, so a hero can hand a rotation
    *  over to the section below it without the product jumping. */
   range?: [number, number];
+  /**
+   * Reshapes scroll position before it reaches the sequence.
+   *
+   * Straight scroll maps to a constant rotation speed, which is the one thing
+   * a real camera move never does. A curve lets a section spin hard while the
+   * product flies in, stop dead on the frame the copy is written against, then
+   * resume — all from the same linear scroll, with no second timeline to keep
+   * in sync.
+   */
+  curve?: (p: number) => number;
+  /**
+   * Which sequences may stay decoded while this section holds the stage.
+   *
+   * Defaults to this product and the two either side of it in the catalogue.
+   * The hero needs to say so explicitly: it shows a product from the middle of
+   * the running order, so the neighbours rule would evict the section that
+   * comes immediately after it.
+   */
+  retain?: ProductId[];
   onActive?: () => void;
 }) {
   useLayoutEffect(() => {
@@ -43,15 +64,22 @@ export function useSectionScroll({
     const [from, to] = range;
 
     const claim = () => {
-      const entry = ENTRY_BY_ID[product];
-      applyRoom(entry.bg, entry.ghost);
+      applyRoom(roomOf(ENTRY_BY_ID[product]));
       onActive?.();
 
       // Keep this product and its neighbours decoded; hand everything else
       // back. Five fully decoded sequences at once is around two gigabytes.
       const order = CATALOGUE.map((e) => e.id);
       const index = order.indexOf(product);
-      retainOnly(order.slice(Math.max(0, index - 1), index + 2));
+      retainOnly(retain ?? order.slice(Math.max(0, index - 1), index + 2));
+    };
+
+    // The product on stage is always loading. It may have been released while
+    // the visitor was further down the page; `load` is a no-op for a sequence
+    // that is already arriving. Only while genuinely active: a jump across the
+    // page updates every section it passes, and those must not start fetching.
+    const loadIfOnStage = (self: ScrollTrigger) => {
+      if (self.isActive) getSequence(product).load().catch(() => {});
     };
 
     const trigger = ScrollTrigger.create({
@@ -59,32 +87,51 @@ export function useSectionScroll({
       start: "top top",
       end: "bottom bottom",
       onUpdate: (self) => {
-        progress.current = from + self.progress * (to - from);
+        const shaped = curve ? curve(self.progress) : self.progress;
+        progress.current = from + shaped * (to - from);
         // Claimed on every update rather than only on the enter edge:
         // ScrollTrigger evaluates triggers in its own order after an instant
         // jump, and an edge-triggered claim lets whichever toggles last win.
         claim();
+        loadIfOnStage(self);
       },
       onToggle: (self) => {
-        if (self.isActive) claim();
+        if (!self.isActive) return;
+        claim();
+        loadIfOnStage(self);
       },
     });
 
-    // Start fetching before the section is on screen, so arriving at it does
-    // not begin with an empty frame.
-    ScrollTrigger.create({
+    // Start fetching before the section is on screen, from either direction,
+    // so arriving at it does not begin with an empty frame. Not `once`: a
+    // sequence released while the visitor was elsewhere has to come back when
+    // they return.
+    // A beat's grace before fetching: a jump from the nav to the far end of
+    // the page passes through every section on the way, and without it each
+    // one would start downloading a sequence the visitor never stops at.
+    let pending = 0;
+    const approach = ScrollTrigger.create({
       trigger: element,
       start: "top bottom+=60%",
-      once: true,
-      onEnter: () => {
-        getSequence(product).load().catch(() => {});
+      end: "bottom top-=60%",
+      onToggle: (self) => {
+        window.clearTimeout(pending);
+        if (!self.isActive) return;
+        pending = window.setTimeout(() => {
+          if (approach.isActive) getSequence(product).load().catch(() => {});
+        }, 400);
       },
     });
 
-    if (trigger.isActive) claim();
+    if (trigger.isActive) {
+      claim();
+      loadIfOnStage(trigger);
+    }
 
     return () => {
+      window.clearTimeout(pending);
       trigger.kill();
+      approach.kill();
     };
-  }, [ref, product, progress, range, onActive]);
+  }, [ref, product, progress, range, curve, retain, onActive]);
 }

@@ -37,7 +37,14 @@ const ALPHA_QUALITY = 82;
 const PRODUCTS = ["iphone", "macbook-m5", "airpods-max", "macbook-neo", "airpods-pro"];
 
 /** Products that need a delivered size other than the default. */
-const perProductOutput = { "airpods-max": 840 };
+// The AirPods Max is the hero product, so it is delivered larger than the
+// others: the opening zooms it well past its resting size, and an 840px source
+// showed that as softness on the one element the page opens on. Its knitted
+// canopy is also the most expensive thing here to encode, so it takes a lower
+// quality number to pay for the extra pixels — a trade that comes out ahead,
+// because resolution is what the eye reads on a mesh, not compression detail.
+const perProductOutput = { "airpods-max": 960 };
+const perProductQuality = { "airpods-max": 68 };
 const only = process.argv.slice(2);
 const targets = only.length > 0 ? PRODUCTS.filter((p) => only.includes(p)) : PRODUCTS;
 
@@ -149,7 +156,11 @@ for (const product of targets) {
     const buffer = await sharp(readFileSync(join(tmp, file)))
       .extract(crop)
       .resize(Math.round(crop.width * scale), Math.round(crop.height * scale))
-      .webp({ quality: WEBP_QUALITY, alphaQuality: ALPHA_QUALITY, effort: 6 })
+      .webp({
+        quality: perProductQuality[product] ?? WEBP_QUALITY,
+        alphaQuality: ALPHA_QUALITY,
+        effort: 6,
+      })
       .toBuffer();
     writeFileSync(join(out, name), buffer);
     bytes += buffer.length;

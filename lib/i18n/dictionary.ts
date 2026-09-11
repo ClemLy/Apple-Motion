@@ -17,11 +17,35 @@ export const en = {
   nav: {
     products: "Products",
     skip: "Skip to content",
+    jump: "Jump to a product",
   },
 
   loader: {
     status: "Loading",
     hint: "Just a moment",
+  },
+
+  cursor: {
+    product: "Scroll",
+  },
+
+  sound: {
+    mute: "Mute the opening sound",
+    unmute: "Unmute the opening sound",
+  },
+
+  palette: {
+    jumpEyebrow: "Jump to a product",
+    jumpHint: "Use the arrow keys, or click one",
+    shortcutsEyebrow: "Keyboard shortcuts",
+    shortcutsHint: "Press Esc to close",
+    close: "Close",
+    shortcutsList: [
+      { keys: "/", label: "Jump to a product" },
+      { keys: "?", label: "Show this panel" },
+      { keys: "Esc", label: "Close whatever is open" },
+      { keys: "EN / FR", label: "Switch language" },
+    ],
   },
 
   hero: {
@@ -43,6 +67,7 @@ export const en = {
   products: {
     iphone: {
       index: "01",
+      word: "titanium",
       tagline: "The ultimate canvas",
       lede: "A grade 5 titanium chassis wrapped around the brightest display Apple has ever shipped. Turn it in the light and watch the polish break across the rails in one unbroken line, the kind of detail that only survives when the tolerance is measured in microns.",
       detail: {
@@ -71,6 +96,7 @@ export const en = {
 
     "macbook-m5": {
       index: "02",
+      word: "power",
       tagline: "Unrivalled power",
       lede: "Open it. The hinge holds anywhere across its arc, the display wakes before the lid finishes moving, and the whole machine stays silent doing it. On battery, it performs exactly as it does plugged in, a claim almost nothing else in the category can make.",
       detail: {
@@ -99,6 +125,7 @@ export const en = {
 
     "airpods-max": {
       index: "03",
+      word: "sound",
       tagline: "Sound, redefined",
       lede: "Forty millimetres of dynamic driver, a canopy of knitted mesh, and a frame of anodised aluminium. Nothing here hides behind a cover. The mesh is the structure, the aluminium is the finish, and the engineering is the design.",
       detail: {
@@ -127,6 +154,7 @@ export const en = {
 
     "macbook-neo": {
       index: "04",
+      word: "light",
       tagline: "The next icon",
       lede: "The thinnest enclosure ever machined from a single billet. Nothing was added to make it look light. Everything unnecessary was removed until it was, leaving no fan, no vent, no moving part anywhere in the machine.",
       detail: {
@@ -155,6 +183,7 @@ export const en = {
 
     "airpods-pro": {
       index: "05",
+      word: "silence",
       tagline: "Pure silence",
       lede: "Open the case and the world goes quiet. Adaptive Audio reads the room a hundred times a second and decides what you should still hear. A siren stays, a train does not, and you never touch a control to make that happen.",
       detail: {
@@ -180,6 +209,38 @@ export const en = {
         { label: "Rating", value: "IP54, dust and water" },
       ],
     },
+  },
+
+  lineup: {
+    index: "06",
+    eyebrow: "The line-up",
+    title: ["Five objects.", "One obsession."],
+    lede: "Seen side by side, they stop reading as products and start reading as a family. The same restraint, the same patience, five different ways of being held.",
+    explore: "Explore",
+  },
+
+  story: {
+    index: "07",
+    eyebrow: "About the project",
+    manifesto:
+      "This is a personal project, built out of curiosity rather than for a client. A single photo never really shows what an object is like, so these five were given room to move, and you are the one turning them.",
+    signatureLabel: "Imagined and crafted by",
+    signature: "Clémentin Ly",
+    principlesLabel: "Three principles",
+    principles: [
+      {
+        title: "Form",
+        body: "Every object is first shown from the angle it was drawn for, then allowed to turn away from it.",
+      },
+      {
+        title: "Material",
+        body: "Titanium, aluminium, knitted mesh. Each room takes its colour from what the product is made of.",
+      },
+      {
+        title: "Restraint",
+        body: "Nothing on this page moves without a reason, and nothing stays still once it has one.",
+      },
+    ],
   },
 
   footer: {
@@ -208,11 +269,35 @@ export const fr: Dictionary = {
   nav: {
     products: "Produits",
     skip: "Aller au contenu",
+    jump: "Aller à un produit",
   },
 
   loader: {
     status: "Chargement",
     hint: "Un instant",
+  },
+
+  cursor: {
+    product: "Défiler",
+  },
+
+  sound: {
+    mute: "Couper le son d'ouverture",
+    unmute: "Activer le son d'ouverture",
+  },
+
+  palette: {
+    jumpEyebrow: "Aller à un produit",
+    jumpHint: "Utilisez les flèches, ou cliquez",
+    shortcutsEyebrow: "Raccourcis clavier",
+    shortcutsHint: "Échap pour fermer",
+    close: "Fermer",
+    shortcutsList: [
+      { keys: "/", label: "Aller à un produit" },
+      { keys: "?", label: "Afficher ce panneau" },
+      { keys: "Échap", label: "Fermer ce qui est ouvert" },
+      { keys: "EN / FR", label: "Changer de langue" },
+    ],
   },
 
   hero: {
@@ -232,6 +317,7 @@ export const fr: Dictionary = {
   products: {
     iphone: {
       index: "01",
+      word: "titane",
       tagline: "La toile absolue",
       lede: "Un châssis en titane de grade 5 refermé sur l'écran le plus lumineux jamais produit par Apple. Inclinez-le vers la lumière et regardez le poli se briser le long des arêtes en une seule ligne continue, le genre de détail qui ne survit que lorsque la tolérance se mesure en microns.",
       detail: {
@@ -260,6 +346,7 @@ export const fr: Dictionary = {
 
     "macbook-m5": {
       index: "02",
+      word: "puissance",
       tagline: "Puissance sans rivale",
       lede: "Ouvrez-le. La charnière tient sur toute sa course, l'écran s'allume avant que le capot ait fini sa trajectoire, et la machine reste silencieuse en le faisant. Sur batterie, elle tient exactement la même performance que sur secteur, une affirmation que presque rien d'autre dans la catégorie ne peut tenir.",
       detail: {
@@ -288,6 +375,7 @@ export const fr: Dictionary = {
 
     "airpods-max": {
       index: "03",
+      word: "son",
       tagline: "Le son, redéfini",
       lede: "Quarante millimètres de transducteur, une voûte de maille tricotée, une armature en aluminium anodisé. Rien n'est ici dissimulé derrière un capot. La maille est la structure, l'aluminium est la finition, et l'ingénierie est le design.",
       detail: {
@@ -316,6 +404,7 @@ export const fr: Dictionary = {
 
     "macbook-neo": {
       index: "04",
+      word: "légèreté",
       tagline: "La prochaine icône",
       lede: "Le boîtier le plus fin jamais usiné dans un bloc unique. Rien n'a été ajouté pour le faire paraître léger. Tout le superflu a été retiré jusqu'à ce qu'il le soit, sans ventilateur, sans grille, sans la moindre pièce mobile.",
       detail: {
@@ -344,6 +433,7 @@ export const fr: Dictionary = {
 
     "airpods-pro": {
       index: "05",
+      word: "silence",
       tagline: "Silence absolu",
       lede: "Ouvrez le boîtier et le monde se tait. L'audio adaptatif analyse la pièce cent fois par seconde et décide de ce que vous devez encore entendre. Une sirène reste, un train disparaît, et vous ne touchez jamais une commande pour que cela arrive.",
       detail: {
@@ -369,6 +459,38 @@ export const fr: Dictionary = {
         { label: "Indice", value: "IP54, poussière et eau" },
       ],
     },
+  },
+
+  lineup: {
+    index: "06",
+    eyebrow: "La collection",
+    title: ["Cinq objets.", "Une obsession."],
+    lede: "Côte à côte, ils cessent d'être des produits et se lisent comme une famille. La même retenue, la même patience, cinq façons différentes de se laisser tenir.",
+    explore: "Découvrir",
+  },
+
+  story: {
+    index: "07",
+    eyebrow: "À propos du projet",
+    manifesto:
+      "Ce site est un projet personnel, fait par curiosité, pas pour un client. Une simple photo ne montre jamais vraiment un objet, alors ces cinq-là ont eu le droit de bouger, et c'est vous qui les faites tourner.",
+    signatureLabel: "Imaginé et conçu par",
+    signature: "Clémentin Ly",
+    principlesLabel: "Trois principes",
+    principles: [
+      {
+        title: "Forme",
+        body: "Chaque objet se montre d'abord sous l'angle pour lequel il a été dessiné, puis on le laisse s'en détourner.",
+      },
+      {
+        title: "Matière",
+        body: "Titane, aluminium, maille tricotée. Chaque pièce prend sa couleur dans la matière du produit.",
+      },
+      {
+        title: "Retenue",
+        body: "Rien ne bouge sans raison sur cette page, et rien ne reste immobile une fois qu'il en a une.",
+      },
+    ],
   },
 
   footer: {

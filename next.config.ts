@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   // The floating dev badge overlaps the bottom-left of every QA screenshot.
   devIndicators: false,
   transpilePackages: ["three"],
+  images: {
+    // Only the rendered product frames are ever resized by the image service.
+    localPatterns: [{ pathname: "/sequences/**", search: "" }],
+  },
   experimental: {
     optimizePackageImports: ["@react-three/drei", "gsap"],
   },

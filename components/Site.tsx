@@ -5,8 +5,13 @@ import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { Nav } from "@/components/ui/Nav";
 import { Preloader } from "@/components/ui/Preloader";
 import { ProgressRail } from "@/components/ui/ProgressRail";
-import { Hero, HERO_RANGE } from "@/components/sections/Hero";
+import { Cursor } from "@/components/ui/Cursor";
+import { Vignette } from "@/components/ui/Vignette";
+import { CommandPalette } from "@/components/ui/CommandPalette";
+import { Hero } from "@/components/sections/Hero";
 import { ProductSection } from "@/components/sections/ProductSection";
+import { Lineup } from "@/components/sections/Lineup";
+import { Story } from "@/components/sections/Story";
 import { Footer } from "@/components/sections/Footer";
 import { CATALOGUE } from "@/lib/catalogue";
 
@@ -18,19 +23,22 @@ function Page() {
       <Preloader />
       <Nav />
       <ProgressRail />
+      <Cursor />
+      <Vignette />
+      <CommandPalette />
 
       <main id="main" className="relative">
         <Hero />
 
-        {CATALOGUE.map((entry, i) => (
-          <ProductSection
-            key={entry.id}
-            entry={entry}
-            // The first section picks the rotation up exactly where the hero
-            // left it, so the product never jumps at the handover.
-            range={i === 0 ? [HERO_RANGE[1], 1] : [0, 1]}
-          />
+        {/* Every section now plays its product's full revolution. The hero
+            opens on a product from the middle of the running order, so there is
+            no rotation left mid-turn for the first section to pick up. */}
+        {CATALOGUE.map((entry) => (
+          <ProductSection key={entry.id} entry={entry} />
         ))}
+
+        <Lineup />
+        <Story />
 
         <Footer />
       </main>

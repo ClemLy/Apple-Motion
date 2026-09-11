@@ -18,7 +18,7 @@ export function LanguageSwitch() {
     <div
       role="group"
       aria-label={t.a11y.languageSwitch}
-      className="relative flex items-center rounded-full border border-hair bg-surface p-0.5 backdrop-blur-md"
+      className="relative flex items-center rounded-full border border-line bg-ink/5 p-0.5 backdrop-blur-md"
     >
       <span
         aria-hidden="true"
@@ -32,7 +32,9 @@ export function LanguageSwitch() {
           onClick={() => setLocale(code)}
           aria-pressed={locale === code}
           className={`relative z-10 w-11 rounded-full py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase transition-colors duration-300 ${
-            locale === code ? "text-white" : "text-ink-soft hover:text-ink"
+            // The active label sits on the ink-coloured thumb, so it takes the
+            // colour of the ground: dark over a light room, light over a dark one.
+            locale === code ? "text-[var(--ink-contrast,#ffffff)]" : "text-ink-2 hover:text-ink"
           }`}
         >
           {code}

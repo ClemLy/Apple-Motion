@@ -24,13 +24,13 @@ const body = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Apple Motion — Every angle, in motion",
+  title: "Apple Motion · Every angle, in motion",
   description:
-    "An independent showcase of Apple product design. Five products rendered frame by frame and played back under your scroll. Not affiliated with Apple Inc.",
+    "Five Apple products, turning under your scroll. An independent showcase of the details most people never notice, and always feel. Not affiliated with Apple Inc.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f2ece4",
+  themeColor: "#c9dcee",
   colorScheme: "light",
 };
 

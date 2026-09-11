@@ -3,12 +3,19 @@
 @theme {
   --font-display: var(--font-display-family), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-body-family), ui-sans-serif, system-ui, sans-serif;
+}
 
+/* Inline, so a utility like `bg-room` compiles to `var(--bg)` itself. Declared
+   the ordinary way, the token is resolved once on the root and inherited as a
+   fixed colour, and a section that sets its own room colours would still be
+   painted in the page's. */
+@theme inline {
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-line: var(--line);
   --color-ghost: var(--ghost);
   --color-room: var(--bg);
+  --color-accent: var(--accent);
 }
 
 :root {
@@ -16,8 +23,11 @@
 
   /* The room. Both are re-written by the scroll as each product takes over, so
      everything downstream reads them rather than hard-coding a colour. */
-  --bg: #ead9c6;
-  --ghost: #f8efe2;
+  /* The opening room: the page first paints in the hero's colours, so nothing
+     has to fade into them after load. */
+  --bg: #c9dcee;
+  --ghost: #e6f1fb;
+  --accent: #6ba3d6;
 
   /* Two ink tones, no more. Both clear 4.5:1 against every ground this site
      uses — the binding case is body text on the AirPods Pro taupe, which is
@@ -80,6 +90,9 @@ body {
 /* ---- controls ---------------------------------------------------------- */
 
 .pill {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
@@ -93,12 +106,38 @@ body {
   backdrop-filter: blur(12px);
   transition:
     border-color 400ms cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 400ms cubic-bezier(0.22, 1, 0.36, 1);
+    color 400ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.pill:hover {
-  border-color: rgb(13 13 15 / 0.34);
-  background: rgb(255 255 255 / 0.8);
+/* The fill rises from the floor of the pill rather than crossfading in, the
+   way a liquid finds its level — colour, not just a brighter background.
+   Clipped into view rather than translated into view: a translated box still
+   occupies its full untransformed footprint as far as layout overflow is
+   concerned, which doubled this button's own scrollHeight even though
+   `overflow: hidden` was already hiding it from view — nothing was visibly
+   wrong, but it also meant this element could never again be told apart from
+   one that actually clips its text. Clip-path never extends the box in the
+   first place. */
+.pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--accent);
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pill:hover,
+.pill:focus-visible {
+  border-color: transparent;
+  color: #f8f6f2;
+}
+
+.pill:hover::before,
+.pill:focus-visible::before {
+  clip-path: inset(0 0 0 0);
 }
 
 .pill:focus-visible {
@@ -183,4 +222,321 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .marquee-track { animation: none; }
+}
+
+/* ---- atmosphere --------------------------------------------------------- */
+
+/* A slow orbit for the accent glow behind a product. Long enough that it never
+   reads as an animation, only as a room that is not perfectly still. */
+@keyframes auraDrift {
+  0%   { transform: translate3d(-5%, -3%, 0) scale(1); }
+  50%  { transform: translate3d(5%, 4%, 0) scale(1.14); }
+  100% { transform: translate3d(-5%, -3%, 0) scale(1); }
+}
+
+/* Film grain over the flat grounds.
+   Large areas of a single flat colour band on eight-bit displays and read as
+   empty no matter what is drawn on top of them. A trace of noise breaks the
+   banding and gives the ground a surface. */
+.grain::after {
+  content: "";
+  position: absolute;
+  /* Oversized, so it can be shifted around without ever exposing an edge. */
+  inset: -40%;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Jumps between offsets rather than sliding, the way grain changes from one
+     frame of film to the next. A transform, so it never repaints the page. */
+  animation: grain 0.9s steps(1) infinite;
+  will-change: transform;
+}
+
+@keyframes grain {
+  0% { transform: translate3d(0, 0, 0); }
+  10% { transform: translate3d(-3%, -5%, 0); }
+  20% { transform: translate3d(-8%, 2%, 0); }
+  30% { transform: translate3d(4%, -9%, 0); }
+  40% { transform: translate3d(-2%, 7%, 0); }
+  50% { transform: translate3d(-9%, 4%, 0); }
+  60% { transform: translate3d(7%, 0, 0); }
+  70% { transform: translate3d(0, 8%, 0); }
+  80% { transform: translate3d(3%, 11%, 0); }
+  90% { transform: translate3d(-6%, -3%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aura-drift { animation: none !important; }
+  .grain::after { animation: none !important; }
+}
+
+/* ---- data tiles ---------------------------------------------------------- */
+
+/* A single fact, boxed.
+   A label-value pair set as a bordered tile rather than a line in a list, so a
+   spec sheet reads as a small dashboard instead of a page torn from a manual.
+   The room's own accent is what the tile answers to: on hover its border and
+   ground pick up that colour, which is what ties a product's tiles to the
+   product rather than to the page. */
+.spec-tile {
+  position: relative;
+  border-radius: 0.85rem;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+  padding: 0.6rem 0.75rem;
+  transition:
+    border-color 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) {
+  .spec-tile:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+}
+
+/* ---- cursor ------------------------------------------------------------- */
+
+/* Only drawn where there is a real pointer to replace. */
+.cursor-layer {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cursor-layer {
+    display: block;
+  }
+
+  html.has-cursor,
+  html.has-cursor a,
+  html.has-cursor button {
+    cursor: none;
+  }
+}
+
+.cursor-ring,
+.cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 120;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  will-change: transform;
+}
+
+.cursor-ring[data-visible="true"],
+.cursor-dot[data-visible="true"] {
+  opacity: 1;
+}
+
+/* The body carries the size and colour; the outer element carries only the
+   position GSAP writes, so the two never share a transform. */
+.cursor-ring-body {
+  position: absolute;
+  top: -18px;
+  left: -18px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgb(13 13 15 / 0.38);
+  border-radius: 999px;
+  background: transparent;
+  transform: scale(1);
+  transition:
+    transform 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 400ms ease,
+    border-color 400ms ease;
+}
+
+.cursor-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #0d0d0f;
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+
+.cursor-dot-body {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #0d0d0f;
+  transition:
+    transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 400ms ease;
+}
+
+.cursor-ring[data-state="link"] .cursor-ring-body {
+  transform: scale(1.7);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.cursor-ring[data-state="product"] .cursor-ring-body,
+.cursor-ring[data-state="view"] .cursor-ring-body {
+  transform: scale(2.6);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--accent) 78%, white);
+}
+
+.cursor-ring[data-state="product"] .cursor-label,
+.cursor-ring[data-state="view"] .cursor-label {
+  opacity: 1;
+}
+
+.cursor-dot[data-state="link"] .cursor-dot-body,
+.cursor-dot[data-state="product"] .cursor-dot-body,
+.cursor-dot[data-state="view"] .cursor-dot-body {
+  transform: scale(0);
+}
+
+.cursor-ring[data-pressed="true"] .cursor-ring-body {
+  transform: scale(0.82);
+}
+
+.cursor-ring[data-state="link"][data-pressed="true"] .cursor-ring-body {
+  transform: scale(1.4);
+}
+
+/* In a dark room the idle cursor turns light. */
+.cursor-ring[data-tone="dark"] .cursor-ring-body {
+  border-color: rgb(244 244 245 / 0.45);
+}
+
+.cursor-dot[data-tone="dark"] .cursor-dot-body {
+  background: #f4f4f5;
+}
+
+/* A short wake behind the dot, only ever as strong as the pointer is fast.
+   `opacity` is written directly from Cursor.tsx every move; position comes
+   from GSAP. Sized down the chain so the trail tapers rather than reading as
+   three equal dots. */
+.cursor-trail-dot {
+  position: fixed;
+  top: -3px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.cursor-trail-dot:nth-child(1) { width: 5px; height: 5px; top: -2.5px; left: -2.5px; }
+.cursor-trail-dot:nth-child(2) { width: 4px; height: 4px; top: -2px; left: -2px; }
+.cursor-trail-dot:nth-child(3) { width: 3px; height: 3px; top: -1.5px; left: -1.5px; }
+
+/* ---- progress rail ------------------------------------------------------ */
+
+.progress-rail {
+  --rail-gap: 12px;
+  transition: opacity 500ms ease;
+}
+
+.progress-rail-row + .progress-rail-row {
+  margin-top: var(--rail-gap);
+}
+
+.progress-rail-track {
+  width: 14px;
+  transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.progress-rail-index {
+  opacity: 0;
+  transform: translateX(6px);
+  transition:
+    opacity 400ms ease,
+    transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.progress-rail-row[data-active="true"] .progress-rail-track {
+  width: 40px;
+}
+
+.progress-rail-row[data-active="true"] .progress-rail-index {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ---- header ---------------------------------------------------------- */
+
+/* The idling lens ring in the brand mark. Never draws attention on its own —
+   the header is not supposed to compete with the page — but a header that
+   never moves at all is the one piece of chrome visible on every scroll
+   position, so it earns a little life of its own. */
+.mark-ring {
+  animation: aperture-idle-spin 16s linear infinite;
+}
+
+@keyframes aperture-idle-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* The condensed header's glass, tinted by the room it is floating over rather
+   than staying a neutral grey. `--scroll-kick` is written every scroll frame
+   in Nav.tsx and pushes the blur and saturation up for as long as the visitor
+   is actually flicking the wheel, so the glass answers the gesture and not
+   only the position. */
+.nav-shell {
+  --scroll-kick: 0;
+}
+
+.nav-shell[data-condensed="true"] {
+  backdrop-filter: blur(calc(26px + var(--scroll-kick) * 14px))
+    saturate(calc(150% + var(--scroll-kick) * 70%));
+}
+
+.nav-tint-light {
+  background: color-mix(in srgb, var(--accent) 11%, rgb(255 255 255 / 0.64));
+}
+
+.nav-tint-dark {
+  background: color-mix(in srgb, var(--accent) 18%, rgb(11 11 13 / 0.62));
+}
+
+/* ---- hero product surface ------------------------------------------------ */
+
+/* A bar of light crossing the product on a slow loop. It reads against the
+   canvas's own transparency too, not only the product's surface — a wash
+   this faint over an empty area is not worth singling out with a mask, and
+   doing so would mean reading the canvas back every frame. */
+.hero-sweep {
+  background: radial-gradient(
+    circle,
+    rgb(255 255 255 / 0.32) 0%,
+    rgb(255 255 255 / 0.1) 34%,
+    transparent 68%
+  );
+  background-size: 200% 200%;
+  background-position: 120% -20%;
+  mix-blend-mode: soft-light;
+  filter: blur(6px);
+  animation: hero-sweep 7s ease-in-out infinite;
+}
+
+@keyframes hero-sweep {
+  0%, 100% { background-position: 120% -20%; }
+  50% { background-position: -20% 120%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-sweep { animation: none; background-position: 50% 50%; }
 }
