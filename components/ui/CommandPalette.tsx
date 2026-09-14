@@ -70,6 +70,7 @@ export function CommandPalette() {
   const closeRef = useRef<HTMLButtonElement>(null);
   const [highlight, setHighlight] = useState(0);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const previousFocus = useRef<HTMLElement | null>(null);
 
   const close = useCallback(() => setMode(null), []);
 
@@ -93,6 +94,20 @@ export function CommandPalette() {
         if (event.key === "Escape") {
           event.preventDefault();
           close();
+        } else if (event.key === "Tab") {
+          // A dialog that lets Tab carry focus out to the page behind it is
+          // not actually modal to a keyboard or screen-reader user, whatever
+          // the backdrop suggests to a sighted one — so this key is trapped
+          // here rather than left to the browser's default order.
+          const focusables = card.current?.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          if (!focusables || focusables.length === 0) return;
+          event.preventDefault();
+          const list = Array.from(focusables);
+          const current = list.indexOf(document.activeElement as HTMLElement);
+          const next = (current + (event.shiftKey ? -1 : 1) + list.length) % list.length;
+          list[next].focus();
         } else if (mode === "jump") {
           if (event.key === "ArrowDown") {
             event.preventDefault();
@@ -175,6 +190,20 @@ export function CommandPalette() {
   useEffect(() => {
     if (mode === "jump") itemRefs.current[highlight]?.focus({ preventScroll: true });
   }, [highlight, mode]);
+
+  // Keyboard focus is handed to the dialog while it is open (see above) and
+  // handed back to wherever it came from once it closes — the button that
+  // opened it, or nothing in particular if a global shortcut did. Without
+  // this, closing the palette leaves focus on a `<button>` that just
+  // unmounted, which most browsers quietly drop to `<body>`.
+  useEffect(() => {
+    if (mode) {
+      previousFocus.current = document.activeElement as HTMLElement | null;
+    } else if (previousFocus.current) {
+      previousFocus.current.focus({ preventScroll: true });
+      previousFocus.current = null;
+    }
+  }, [mode]);
 
   if (!mode) return null;
 

@@ -39,5 +39,11 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "three": "^0.186.0"
-  }
+  },
+  "browserslist": [
+    "chrome >= 105",
+    "edge >= 105",
+    "firefox >= 105",
+    "safari >= 15.4"
+  ]
 }

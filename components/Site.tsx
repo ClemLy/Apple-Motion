@@ -52,7 +52,14 @@ function Page() {
       <Vignette />
       <CommandPalette />
 
-      <main id="main" className="relative">
+      {/* `tabIndex={-1}` is what makes the header's skip link actually skip
+          anything: without it, a fragment jump to `#main` scrolls the page
+          but leaves focus on `<body>`, so the very next Tab press re-enters
+          the page at the start of the DOM — through the header again — which
+          is the one thing a skip link exists to avoid. `outline-none` because
+          the target is a full-page landmark, not a control; the visible
+          focus ring lands on whatever real control the visitor reaches next. */}
+      <main id="main" tabIndex={-1} className="relative outline-none">
         <Hero />
 
         {/* Every section now plays its product's full revolution. The hero

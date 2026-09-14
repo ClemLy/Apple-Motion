@@ -23,7 +23,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 13;
  */
 const ENOUGH = 0.14;
 /** Floor on how long the loader stays, so a warm cache doesn't flash it. */
-const MINIMUM_MS = 1400;
+const MINIMUM_MS = 700;
 /** Points along the lifting edge. Enough for the curve to read as smooth. */
 const EDGE_POINTS = 24;
 
@@ -158,9 +158,9 @@ export function Preloader() {
         .to(element.querySelectorAll("[data-loader-fade]"), {
           autoAlpha: 0,
           y: 14,
-          duration: 0.45,
+          duration: 0.32,
           ease: "power2.in",
-          stagger: 0.04,
+          stagger: 0.03,
         })
         // The lift. The middle leaves first and the sides follow, so the
         // edge bows upward and flattens again as it clears the top.
@@ -168,14 +168,14 @@ export function Preloader() {
           edge,
           {
             keyframes: [
-              { edge: 62, bow: 16, duration: 0.45, ease: "power2.in" },
-              { edge: -18, bow: 0, duration: 0.65, ease: "power3.out" },
+              { edge: 62, bow: 16, duration: 0.32, ease: "power2.in" },
+              { edge: -18, bow: 0, duration: 0.46, ease: "power3.out" },
             ],
             onUpdate: () => {
               element.style.clipPath = lifted(edge.edge, edge.bow);
             },
           },
-          "-=0.1"
+          "-=0.08"
         )
         // The hero's chrome starts arriving while the edge is still passing.
         .call(releaseIntro, [], "-=0.55");

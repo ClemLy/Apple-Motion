@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Inter_Tight } from "next/font/google";
+import { HERO_PRODUCT } from "@/lib/catalogue";
 import "./globals.css";
 
 /**
@@ -58,6 +59,13 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
+      <head>
+        {/* The loader's whole job is to hold the page until this exact frame
+            has arrived — discoverable straight from the HTML, so the browser
+            can start fetching it before any JS has run, rather than waiting
+            for the sequence loader to request it itself. */}
+        <link rel="preload" as="image" href={`/sequences/${HERO_PRODUCT}/000.webp`} fetchPriority="high" />
+      </head>
       <body>{children}</body>
     </html>
   );

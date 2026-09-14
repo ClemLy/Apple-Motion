@@ -607,10 +607,10 @@ export function Hero() {
       gsap.to(parts, {
         y: 0,
         opacity: 1,
-        duration: 1.1,
+        duration: 0.85,
         ease: "expo.out",
-        stagger: 0.08,
-        delay: 0.35,
+        stagger: 0.06,
+        delay: 0.15,
         overwrite: "auto",
       });
 

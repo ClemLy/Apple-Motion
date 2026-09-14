@@ -279,7 +279,9 @@ function MobileTrack({ active }: { active: number }) {
             href={`#${product.anchor}`}
             aria-label={`${String(i + 1).padStart(2, "0")} ${product.stack.join(" ")}`}
             aria-current={i === active ? "true" : undefined}
-            className="p-1"
+            // The dot itself stays tiny by design — the padding is what
+            // meets the 24px touch-target minimum, not the visible mark.
+            className="p-3"
           >
             <span
               className="block rounded-full bg-ink transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
