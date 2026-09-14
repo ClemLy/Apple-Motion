@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { applyRoom } from "./theme";
 import { getSequence, retainOnly } from "./sequence";
+import { getScrollVelocity } from "./velocity";
 import type { ProductId } from "./products";
 import { CATALOGUE, ENTRY_BY_ID, roomOf } from "./catalogue";
 
@@ -27,6 +28,7 @@ export function useSectionScroll({
   curve,
   retain,
   onActive,
+  onEnter,
 }: {
   ref: RefObject<HTMLElement | null>;
   product: ProductId;
@@ -55,6 +57,11 @@ export function useSectionScroll({
    */
   retain?: ProductId[];
   onActive?: () => void;
+  /** Fired once, on the scroll-driven edge where this section actually takes
+   *  over from another — never on the section a visitor lands or reloads on.
+   *  `onActive` runs on every scroll frame the section is active; this is
+   *  the one moment inside that a section handoff genuinely happened. */
+  onEnter?: () => void;
 }) {
   useLayoutEffect(() => {
     const element = ref.current;
@@ -99,6 +106,7 @@ export function useSectionScroll({
         if (!self.isActive) return;
         claim();
         loadIfOnStage(self);
+        onEnter?.();
       },
     });
 
@@ -108,7 +116,11 @@ export function useSectionScroll({
     // they return.
     // A beat's grace before fetching: a jump from the nav to the far end of
     // the page passes through every section on the way, and without it each
-    // one would start downloading a sequence the visitor never stops at.
+    // one would start downloading a sequence the visitor never stops at. That
+    // grace shrinks the faster the page is already moving — a visitor flicking
+    // hard toward this section is one of the least ambiguous signals on the
+    // page that they are actually headed here, so there is less reason to
+    // wait out the full window before believing it.
     let pending = 0;
     const approach = ScrollTrigger.create({
       trigger: element,
@@ -117,9 +129,11 @@ export function useSectionScroll({
       onToggle: (self) => {
         window.clearTimeout(pending);
         if (!self.isActive) return;
+        const speed = Math.min(1, Math.abs(getScrollVelocity()) / 12);
+        const delay = 400 - speed * 320;
         pending = window.setTimeout(() => {
           if (approach.isActive) getSequence(product).load().catch(() => {});
-        }, 400);
+        }, delay);
       },
     });
 
@@ -133,5 +147,5 @@ export function useSectionScroll({
       trigger.kill();
       approach.kill();
     };
-  }, [ref, product, progress, range, curve, retain, onActive]);
+  }, [ref, product, progress, range, curve, retain, onActive, onEnter]);
 }

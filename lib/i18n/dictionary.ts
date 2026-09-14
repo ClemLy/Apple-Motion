@@ -43,6 +43,8 @@ export const en = {
     shortcutsList: [
       { keys: "/", label: "Jump to a product" },
       { keys: "?", label: "Show this panel" },
+      { keys: "\u2193 / Page Down", label: "Go to the next section" },
+      { keys: "\u2191 / Page Up", label: "Go to the previous section" },
       { keys: "Esc", label: "Close whatever is open" },
       { keys: "EN / FR", label: "Switch language" },
     ],
@@ -295,7 +297,9 @@ export const fr: Dictionary = {
     shortcutsList: [
       { keys: "/", label: "Aller à un produit" },
       { keys: "?", label: "Afficher ce panneau" },
-      { keys: "Échap", label: "Fermer ce qui est ouvert" },
+      { keys: "\u2193 / Page suivante", label: "Aller à la section suivante" },
+      { keys: "\u2191 / Page pr\u00e9c\u00e9dente", label: "Aller à la section pr\u00e9c\u00e9dente" },
+      { keys: "\u00c9chap", label: "Fermer ce qui est ouvert" },
       { keys: "EN / FR", label: "Changer de langue" },
     ],
   },

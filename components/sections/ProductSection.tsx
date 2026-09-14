@@ -8,6 +8,7 @@ import { useI18n } from "@/lib/i18n/context";
 import { useSectionScroll } from "@/lib/use-section-scroll";
 import { useRecede } from "@/lib/use-room-scene";
 import { roomStyle } from "@/lib/theme";
+import { playTick } from "@/lib/sound";
 import { SequencePlayer } from "@/components/sequence/SequencePlayer";
 import { Curtain } from "@/components/ui/Curtain";
 import { CountUp } from "@/components/ui/CountUp";
@@ -97,7 +98,14 @@ export function ProductSection({
   const railFill = useRef<HTMLSpanElement>(null);
   const progress = useRef(range[0]);
 
-  useSectionScroll({ ref: section, product: entry.id, progress, range, curve: entryCurve });
+  useSectionScroll({
+    ref: section,
+    product: entry.id,
+    progress,
+    range,
+    curve: entryCurve,
+    onEnter: playTick,
+  });
   useRecede(scene);
 
   useLayoutEffect(() => {
@@ -206,6 +214,13 @@ export function ProductSection({
     <section
       ref={section}
       id={entry.anchor}
+      // Deliberately without `content-visibility: auto`: `FeatureWord` and
+      // `DetailShot` below both fit themselves to their container's measured
+      // height on mount, and a section skipped by content-visibility at that
+      // exact instant measures as zero, leaving the word unfit and running
+      // past the frame the next time it is actually looked at. The line-up
+      // and the manifesto carry the class instead — plainer layouts, with
+      // nothing that measures itself against a box that might not exist yet.
       className="relative"
       style={{ height: `${LENGTH}vh`, ...roomStyle(roomOf(entry)) }}
       aria-label={entry.stack.join(" ")}

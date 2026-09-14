@@ -517,19 +517,34 @@ body {
 /* A bar of light crossing the product on a slow loop. It reads against the
    canvas's own transparency too, not only the product's surface — a wash
    this faint over an empty area is not worth singling out with a mask, and
-   doing so would mean reading the canvas back every frame. */
+   doing so would mean reading the canvas back every frame.
+
+   No blend mode, no blur filter: both force the compositor to resample this
+   layer's actual backdrop on every frame it moves, for a softness the
+   gradient's own colour stops already supply on their own. Paused outright
+   — see `.paused` below — whenever the hero is off screen, which is most of
+   the time a visitor spends on the page. */
 .hero-sweep {
+  /* Nudged by scroll speed: written every tick in Hero.tsx, same pattern as
+     the header's `--scroll-kick`, so the light answers the gesture and not
+     only the clock. Opacity only, never `transform` — this element already
+     carries a Tailwind translate to centre itself, and a second `transform`
+     declared here would win the cascade and silently drop that centring. */
+  --sweep-kick: 0;
   background: radial-gradient(
     circle,
-    rgb(255 255 255 / 0.32) 0%,
-    rgb(255 255 255 / 0.1) 34%,
-    transparent 68%
+    rgb(255 255 255 / 0.22) 0%,
+    rgb(255 255 255 / 0.07) 40%,
+    transparent 72%
   );
   background-size: 200% 200%;
   background-position: 120% -20%;
-  mix-blend-mode: soft-light;
-  filter: blur(6px);
+  opacity: calc(0.82 + var(--sweep-kick) * 0.18);
   animation: hero-sweep 7s ease-in-out infinite;
+}
+
+.hero-sweep.paused {
+  animation-play-state: paused;
 }
 
 @keyframes hero-sweep {
@@ -538,5 +553,174 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-sweep { animation: none; background-position: 50% 50%; }
+  .hero-sweep { animation: none; background-position: 50% 50%; opacity: 0.82; }
+}
+
+/* A slow burst of light behind the product, the room's own colour read as
+   rays rather than a flat glow. Rotation only — no gradient repaint, no
+   blend mode — so the cost of spinning it forever is the same as the mark's
+   idling ring in the header. Paused with the aura and the sweep whenever the
+   hero is off screen. */
+.hero-rays {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgb(255 255 255 / 0.1) 4deg,
+    transparent 10deg,
+    transparent 42deg,
+    rgb(255 255 255 / 0.07) 47deg,
+    transparent 54deg,
+    transparent 96deg,
+    rgb(255 255 255 / 0.09) 101deg,
+    transparent 108deg,
+    transparent 150deg,
+    rgb(255 255 255 / 0.06) 155deg,
+    transparent 161deg,
+    transparent 204deg,
+    rgb(255 255 255 / 0.08) 209deg,
+    transparent 215deg,
+    transparent 258deg,
+    rgb(255 255 255 / 0.07) 263deg,
+    transparent 269deg,
+    transparent 312deg,
+    rgb(255 255 255 / 0.09) 317deg,
+    transparent 323deg,
+    transparent 360deg
+  );
+  mask-image: radial-gradient(circle, black 0%, transparent 68%);
+  animation: hero-rays-spin 46s linear infinite;
+}
+
+.hero-rays.paused {
+  animation-play-state: paused;
+}
+
+@keyframes hero-rays-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-rays { animation: none; }
+}
+
+/* A handful of motes drifting through the light, the one texture that says
+   "this is a room with air in it" rather than a flat backdrop. Each carries
+   its own delay and drift distance as inline custom properties, computed
+   once from its index in Hero.tsx, so twelve elements can share one
+   keyframe instead of each needing its own rule. Paused with the rest of the
+   idle loop the moment the hero leaves the viewport. */
+.hero-dust {
+  --drift-x: 0px;
+  --drift-y: -40px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgb(255 255 255 / 0.5) 0%, transparent 70%);
+  animation: hero-dust-drift 14s ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s);
+}
+
+.hero-dust.paused {
+  animation-play-state: paused;
+}
+
+@keyframes hero-dust-drift {
+  0% { transform: translate(0, 0); opacity: 0; }
+  15% { opacity: 0.6; }
+  85% { opacity: 0.4; }
+  100% { transform: translate(var(--drift-x), var(--drift-y)); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-dust { animation: none; opacity: 0; }
+}
+
+/* ---- selection, scrollbar, focus ----------------------------------------- */
+
+/* Highlighted text takes the room's own accent rather than the browser's
+   default blue, so even the one interaction every page has for free still
+   belongs to this one. */
+::selection {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--ink);
+}
+
+:root[data-room="dark"] ::selection {
+  color: #f4f4f5;
+}
+
+/* A thin, quiet scrollbar in the page's own ink tone, on the browsers that
+   let a page ask for one. Firefox gets the two-value shorthand; everything
+   Chromium-based gets the pseudo-elements, since it ignores the shorthand
+   and Firefox ignores the pseudo-elements — declaring both costs nothing and
+   each browser only ever reads the rule meant for it. */
+html {
+  scrollbar-color: rgb(13 13 15 / 0.28) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(13 13 15 / 0.22);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(13 13 15 / 0.38);
+  background-clip: padding-box;
+}
+
+/* One focus ring for the whole page, in the room's accent rather than the
+   browser default, so keyboard navigation reads as considered rather than
+   merely present. Components with a more specific need — the pill's, set
+   against its own fill — already override this. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---- accessibility media features ----------------------------------------- */
+
+/* Windows High Contrast (and any browser's forced-colors mode) replaces the
+   page's own palette outright, but it does nothing for a background image or
+   an outline drawn with `-webkit-text-stroke` rather than a real border — so
+   the two treatments this page leans on hardest, the outlined display type
+   and the product photographs' own transparency, are made to hold their
+   shape explicitly instead of trusting the system to guess at them. */
+@media (forced-colors: active) {
+  .outline-type {
+    -webkit-text-stroke-color: CanvasText;
+    color: CanvasText;
+    forced-color-adjust: none;
+  }
+
+  .pill,
+  .spec-tile,
+  .progress-rail-track {
+    forced-color-adjust: none;
+    border: 1px solid CanvasText;
+  }
+
+  :focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
+
+/* A visitor asking the OS for more contrast is asking for exactly one thing
+   from this page: ink that reads as ink. The room colours and the accents
+   stay — those are the site's subject, not noise — only the two greys that
+   do the reading get pushed toward the ends of the scale. */
+@media (prefers-contrast: more) {
+  :root {
+    --ink-2: #2b2c2f;
+    --line: rgb(13 13 15 / 0.32);
+  }
 }

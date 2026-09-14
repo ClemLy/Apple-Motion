@@ -9,6 +9,7 @@ import { useRoomClaim } from "@/lib/use-room-scene";
 import { roomStyle } from "@/lib/theme";
 import { STORY_ROOM } from "@/lib/catalogue";
 import { Curtain } from "@/components/ui/Curtain";
+import { Mark } from "@/components/ui/Nav";
 
 /**
  * Why the page exists, told the way the page tells everything else.
@@ -27,6 +28,7 @@ export function Story() {
   const pin = useRef<HTMLDivElement>(null);
   const manifesto = useRef<HTMLParagraphElement>(null);
   const principles = useRef<HTMLDivElement>(null);
+  const close = useRef<HTMLDivElement>(null);
 
   useRoomClaim(section, STORY_ROOM);
 
@@ -39,6 +41,7 @@ export function Story() {
     const words = text.querySelectorAll<HTMLElement>("[data-word]");
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       gsap.set(words, { opacity: 1 });
+      gsap.set("[data-close-mark]", { autoAlpha: 1 });
       return;
     }
 
@@ -70,6 +73,30 @@ export function Story() {
         ease: "expo.out",
         scrollTrigger: { trigger: principles.current, start: "top 80%", once: true },
       });
+
+      /**
+       * The iris closes.
+       *
+       * No line of copy says "that's the tour" — the mark that opened the
+       * page simply appears once more, small, and the two rules either side
+       * of it draw in to meet it, the way a lens stops down to nothing. It is
+       * the one purely wordless beat on the page, saved for the one moment
+       * that does not need a sentence: everything after this is the sign-off.
+       */
+      gsap
+        .timeline({ scrollTrigger: { trigger: close.current, start: "top 85%", once: true } })
+        .fromTo(
+          "[data-close-rule]",
+          { scaleX: 0 },
+          { scaleX: 1, duration: 1, ease: "power3.inOut" },
+          0
+        )
+        .fromTo(
+          "[data-close-mark]",
+          { autoAlpha: 0, scale: 0.4, rotate: -35 },
+          { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.8, ease: "back.out(1.8)" },
+          0.35
+        );
     }, element);
 
     return () => ctx.revert();
@@ -145,6 +172,18 @@ export function Story() {
               <p className="mt-4 max-w-[36ch] text-[14px] leading-[1.7] text-ink-2">{principle.body}</p>
             </div>
           ))}
+        </div>
+
+        <div
+          ref={close}
+          aria-hidden="true"
+          className="mt-20 flex items-center justify-center gap-5 md:mt-28"
+        >
+          <span data-close-rule className="h-px flex-1 origin-right bg-line" />
+          <span data-close-mark className="shrink-0 opacity-0">
+            <Mark className="h-5 w-5 text-ink-2" />
+          </span>
+          <span data-close-rule className="h-px flex-1 origin-left bg-line" />
         </div>
       </div>
     </section>

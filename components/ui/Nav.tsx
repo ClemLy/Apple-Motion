@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import gsap from "gsap";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useI18n } from "@/lib/i18n/context";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { CATALOGUE } from "@/lib/catalogue";
 import { openPalette } from "@/lib/palette";
 import { isMuted, onMuteChange, toggleSound } from "@/lib/sound";
+import { onTick } from "@/lib/ticker";
 
 /**
  * The mark is deliberately not Apple's logo.
@@ -46,9 +46,7 @@ export function Nav() {
   const header = useRef<HTMLElement>(null);
   const bar = useRef<HTMLSpanElement>(null);
   const nav = useRef<HTMLElement>(null);
-  const pill = useRef<HTMLSpanElement>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
-  const frame = useRef(0);
   // Preview images are only requested once the visitor reaches for the nav,
   // not with the page.
   const [armed, setArmed] = useState(false);
@@ -58,9 +56,12 @@ export function Nav() {
     let lastY = window.scrollY;
     let velocity = 0;
 
+    // Runs every tick rather than once per scroll event: the velocity below
+    // needs to keep decaying smoothly after the last wheel event lands, the
+    // same way the progress rail's does, and every `setState` call here is
+    // already guarded so an unchanged value never triggers a re-render — the
+    // per-frame cost is the read, not the write.
     const measure = () => {
-      frame.current = 0;
-
       const scrolled = window.scrollY;
       velocity += (scrolled - lastY - velocity) * 0.25;
       lastY = scrolled;
@@ -102,50 +103,14 @@ export function Nav() {
       setOverDark((current) => (current === dark ? current : dark));
     };
 
-    const onScroll = () => {
-      if (frame.current) return;
-      frame.current = requestAnimationFrame(measure);
-    };
-
     measure();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    window.addEventListener("resize", measure);
+    const stopTick = onTick(measure);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (frame.current) cancelAnimationFrame(frame.current);
+      stopTick();
+      window.removeEventListener("resize", measure);
     };
   }, []);
-
-  /**
-   * The active pill, poured rather than snapped into place.
-   *
-   * It reads the active item's own box and moves to sit exactly behind it,
-   * so the same code serves every width without a table of breakpoints. The
-   * elastic ease is what makes it read as liquid finding a new level rather
-   * than a selection box jumping between two states.
-   */
-  useLayoutEffect(() => {
-    const target = itemRefs.current[active];
-    const shell = pill.current;
-    const parent = nav.current;
-    if (!target || !shell || !parent) {
-      if (shell) gsap.to(shell, { autoAlpha: 0, duration: 0.3 });
-      return;
-    }
-
-    const parentBox = parent.getBoundingClientRect();
-    const box = target.getBoundingClientRect();
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    gsap.to(shell, {
-      x: box.left - parentBox.left,
-      width: box.width,
-      autoAlpha: 1,
-      duration: still ? 0 : 0.7,
-      ease: "elastic.out(1, 0.65)",
-    });
-  }, [active]);
 
   return (
     <header
@@ -185,12 +150,6 @@ export function Nav() {
           onPointerEnter={() => setArmed(true)}
           onFocus={() => setArmed(true)}
         >
-          <span
-            ref={pill}
-            aria-hidden="true"
-            className="pointer-events-none absolute top-0 left-0 h-full rounded-full opacity-0"
-            style={{ background: "color-mix(in srgb, var(--accent) 20%, transparent)" }}
-          />
           {CATALOGUE.map((entry, i) => {
             const isActive = i === active;
             const name = entry.stack.join(" ");

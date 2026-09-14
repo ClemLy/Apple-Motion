@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { onTick } from "@/lib/ticker";
 
 /**
  * A soft darkening at the edges of the screen.
@@ -18,10 +19,14 @@ export function Vignette() {
     if (!element) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    let raf = 0;
+    let dirty = true;
+    const onScroll = () => {
+      dirty = true;
+    };
 
     const measure = () => {
-      raf = 0;
+      if (!dirty) return;
+      dirty = false;
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const progress = max > 0 ? window.scrollY / max : 0;
       // Held to a narrow band: enough to feel like framing, never enough to
@@ -30,18 +35,13 @@ export function Vignette() {
       element.style.opacity = opacity.toFixed(3);
     };
 
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(measure);
-    };
-
-    measure();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
+    const stopTick = onTick(measure);
     return () => {
+      stopTick();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
-      if (raf) cancelAnimationFrame(raf);
     };
   }, []);
 

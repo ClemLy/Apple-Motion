@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { CATALOGUE } from "@/lib/catalogue";
+import { onTick } from "@/lib/ticker";
 
 /**
  * Where you are in the tour, and how fast you are moving through it.
@@ -52,15 +53,12 @@ export function ProgressRail() {
     ScrollTrigger.addEventListener("refresh", measure);
     window.addEventListener("resize", measure);
 
-    let raf = 0;
     let lastY = window.scrollY;
     let velocity = 0;
     let active = -2;
     let visible: boolean | null = null;
 
     const tick = () => {
-      raf = requestAnimationFrame(tick);
-
       const viewport = window.innerHeight;
       const y = window.scrollY;
       // Smoothed, so a single large wheel step does not make the rail jump.
@@ -102,9 +100,9 @@ export function ProgressRail() {
       element.style.transform = `translate3d(0, calc(-50% + ${(-velocity * 0.9).toFixed(2)}px), 0)`;
     };
 
-    raf = requestAnimationFrame(tick);
+    const stopTick = onTick(tick);
     return () => {
-      cancelAnimationFrame(raf);
+      stopTick();
       ScrollTrigger.removeEventListener("refresh", measure);
       window.removeEventListener("resize", measure);
     };

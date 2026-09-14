@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, type CSSProperties } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -10,7 +10,8 @@ import { useRecede } from "@/lib/use-room-scene";
 import { roomStyle } from "@/lib/theme";
 import { onIntro } from "@/lib/intro";
 import { playWhoosh } from "@/lib/sound";
-import { scrambleTo } from "@/lib/scramble";
+import { onTick } from "@/lib/ticker";
+import { getScrollVelocity } from "@/lib/velocity";
 import { SequencePlayer } from "@/components/sequence/SequencePlayer";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { CATALOGUE, ENTRY_BY_ID, HERO_PRODUCT, HERO_ROOM } from "@/lib/catalogue";
@@ -53,6 +54,29 @@ const SHATTER_SHARDS = SHATTER_RING.map(([x1, y1], i) => {
 });
 
 /**
+ * Vertical offset for each pillar word, so the trio reads as a deliberately
+ * uneven line-up rather than a tidy evenly-gapped list — the same
+ * imbalance the rest of the page gets from mixing an outlined display word
+ * against plain caption type, just carried here as position instead of
+ * weight.
+ */
+const RAIL_OFFSET = [0, 46, -26];
+
+/**
+ * Twelve motes, each given its own drift distance and start delay from its
+ * index alone — no `Math.random()`, so the room looks the same on every
+ * visit rather than reshuffling itself on every mount.
+ */
+const DUST = Array.from({ length: 12 }, (_, i) => ({
+  left: 8 + ((i * 37) % 84),
+  top: 10 + ((i * 53) % 80),
+  size: 3 + (i % 3),
+  driftX: ((i % 2 === 0 ? 1 : -1) * (30 + ((i * 19) % 40))).toString() + "px",
+  driftY: (-50 - ((i * 23) % 60)).toString() + "px",
+  delay: ((i * 1.7) % 14).toFixed(2) + "s",
+}));
+
+/**
  * The slice of the rotation the hero plays.
  *
  * Wider than it looks: the curve below spends most of it during the blast, so
@@ -93,7 +117,6 @@ const LENGTH = 340;
 export function Hero() {
   const { t, locale } = useI18n();
   const section = useRef<HTMLElement>(null);
-  const lines = useRef<HTMLSpanElement[]>([]);
   const stage = useRef<HTMLDivElement>(null);
   const chrome = useRef<HTMLDivElement>(null);
   const foot = useRef<HTMLDivElement>(null);
@@ -107,8 +130,12 @@ export function Hero() {
   const productLayer = useRef<HTMLDivElement>(null);
   const scene = useRef<HTMLDivElement>(null);
   const spotlight = useRef<HTMLDivElement>(null);
+  const sweepRef = useRef<HTMLDivElement>(null);
   const shards = useRef<(HTMLDivElement | null)[]>([]);
   const scrollHint = useRef<HTMLDivElement>(null);
+  const flash = useRef<HTMLDivElement>(null);
+  const rays = useRef<HTMLDivElement>(null);
+  const floor = useRef<HTMLDivElement>(null);
   const progress = useRef(0);
 
   useRecede(scene);
@@ -145,9 +172,12 @@ export function Hero() {
         // the most dramatic frame of the sequence is also the least legible.
         filter: "blur(34px)",
       });
-      gsap.set([railLeft.current, railRight.current], { autoAlpha: 0 });
+      gsap.set([railLeft.current, railRight.current], { autoAlpha: 0, filter: "blur(6px)" });
       gsap.set(seam.current, { scaleX: 0 });
       gsap.set(aura.current, { autoAlpha: 0, scale: 0.5 });
+      gsap.set(rays.current, { autoAlpha: 0 });
+      gsap.set(floor.current, { autoAlpha: 0, scaleX: 0.6 });
+      gsap.set(flash.current, { autoAlpha: 0 });
       gsap.set(shock.current?.querySelectorAll("[data-ring]") ?? [], { scale: 0.12, autoAlpha: 0 });
       gsap.set(shards.current, { x: 0, y: 0, rotate: 0, autoAlpha: 1 });
 
@@ -163,45 +193,57 @@ export function Hero() {
         },
       });
 
-      const count = lines.current.length;
-
       /**
-       * The title is not moved aside. It is blown apart.
+       * The title does not move aside. The product bursts through it.
        *
-       * Each line travels outward from the centre *and* grows as it goes, so
-       * the block reads as coming toward the camera and parting around the
-       * product rather than sliding on a flat plane. Lines further from the
-       * centre move further and faster, which is what gives the split depth.
-       * All of it starts on the same frame the product does, so the two read as
-       * one event rather than a handover.
+       * Every letter of the headline is its own element, and every one of
+       * them gets its own trajectory out from the title's centre — the same
+       * shard geometry as the frosted pane, just measured against text
+       * instead of a fixed ring. The nearer a letter sits to the middle of
+       * the block the less ground it has to cover, so the break reads as a
+       * single blast radiating outward rather than a block sliding off.
        */
-      lines.current.forEach((line, i) => {
-        const offset = i - (count - 1) / 2;
+      const letters = Array.from(element.querySelectorAll<HTMLElement>("[data-letter]"));
+      const titleBox = title.current?.getBoundingClientRect();
+      const cx = titleBox ? titleBox.left + titleBox.width / 2 : 0;
+      const cy = titleBox ? titleBox.top + titleBox.height / 2 : 0;
 
-        if (Math.abs(offset) < 0.001) {
-          timeline
-            .to(line, { scale: 4.6, autoAlpha: 0, ease: "power3.in", duration: 0.22 }, 0.06)
-            .to(line, { letterSpacing: "0.12em", ease: "none", duration: 0.22 }, 0.06)
-            .to(line, { filter: "blur(12px)", ease: "power2.in", duration: 0.22 }, 0.06);
-          return;
-        }
-
-        timeline
-          .to(
-            line,
-            {
-              yPercent: offset * 480,
-              scale: 1 + Math.abs(offset) * 1.1,
-              ease: "power2.in",
-              duration: 0.26,
-            },
-            0.06
-          )
-          .to(line, { filter: "blur(14px)", ease: "power2.in", duration: 0.2 }, 0.06)
-          .to(line, { autoAlpha: 0, ease: "none", duration: 0.1 }, 0.2);
+      const letterTargets = letters.map((node, i) => {
+        const box = node.getBoundingClientRect();
+        const dx = box.left + box.width / 2 - cx;
+        const dy = box.top + box.height / 2 - cy;
+        const length = Math.hypot(dx, dy) || 1;
+        const magnitude = 130 + ((i * 53) % 7) * 26;
+        return {
+          x: (dx / length) * magnitude,
+          y: (dy / length) * magnitude,
+          rotate: (i % 2 === 0 ? 1 : -1) * (26 + ((i * 17) % 5) * 12),
+          scale: 1.3 + ((i * 29) % 4) * 0.22,
+        };
       });
 
+      timeline.to(
+        letters,
+        {
+          x: (i) => letterTargets[i].x,
+          y: (i) => letterTargets[i].y,
+          rotate: (i) => letterTargets[i].rotate,
+          scale: (i) => letterTargets[i].scale,
+          autoAlpha: 0,
+          filter: "blur(12px)",
+          ease: "power3.in",
+          duration: 0.3,
+          stagger: { each: 0.006, from: "random" },
+        },
+        0.05
+      );
+
       timeline
+        // A flash at the point of impact, gone almost as fast as it fires —
+        // a camera catching the moment the pane breaks, not a fade.
+        .to(flash.current, { autoAlpha: 0.9, ease: "none", duration: 0.02 }, 0.06)
+        .to(flash.current, { autoAlpha: 0, ease: "power2.out", duration: 0.16 }, 0.08)
+
         // The opening chrome goes first, so nothing competes with the blast.
         .to(chrome.current, { autoAlpha: 0, y: -20, ease: "none", duration: 0.1 }, 0)
         .to(foot.current, { autoAlpha: 0, y: 32, ease: "none", duration: 0.12 }, 0.01)
@@ -240,7 +282,24 @@ export function Hero() {
         )
         .to(stage.current, { scale: 1.34, ease: "power4.out", duration: BLAST - 0.06 }, 0.06)
         .to(stage.current, { rotateZ: 0, ease: "power3.out", duration: 0.3 }, 0.06)
-        .to(stage.current, { filter: "blur(0px)", ease: "power2.out", duration: 0.19 }, 0.08)
+        // The last of the blur clears through a brief colour split — red and
+        // cyan pulled a few pixels apart, the way a lens does on genuine
+        // impact — rather than straight to sharp. Cleared to `none` outright
+        // once it has settled: a `filter` left sitting at `blur(0px)` still
+        // pins the element to its own composited layer for the rest of the
+        // scroll, which is what made this product's rotation noticeably less
+        // smooth than every other section's.
+        .to(
+          stage.current,
+          {
+            filter: "drop-shadow(3px 0 rgb(255 40 90 / 0.5)) drop-shadow(-3px 0 rgb(40 200 255 / 0.5)) blur(4px)",
+            ease: "power2.out",
+            duration: 0.06,
+          },
+          0.08
+        )
+        .to(stage.current, { filter: "blur(0px)", ease: "power2.out", duration: 0.1 }, 0.14)
+        .set(stage.current, { filter: "none" }, 0.24)
         // The recoil. Overshoot without a settle is a zoom that missed its
         // mark; this is the half of the gesture that gives it weight.
         .to(stage.current, { scale: 1, ease: "power2.inOut", duration: 0.22 }, BLAST)
@@ -262,10 +321,20 @@ export function Hero() {
         .to(aura.current, { autoAlpha: 1, scale: 1.18, ease: "power3.out", duration: 0.26 }, 0.06)
         .to(aura.current, { scale: 1, ease: "power2.inOut", duration: 0.3 }, BLAST)
 
+        // Rays and a pool of light under the product arrive with the aura,
+        // a beat behind it — the glow is the hit itself, these are what the
+        // room looks like once that light has somewhere to fall.
+        .to(rays.current, { autoAlpha: 1, ease: "power2.out", duration: 0.4 }, 0.14)
+        .to(floor.current, { autoAlpha: 1, scaleX: 1, ease: "power3.out", duration: 0.3 }, 0.14)
+
         // Two rails of technical text drift past at different rates while the
         // product turns. They are the only thing on screen still moving, which
-        // is what makes the rotation read as deliberate rather than idle.
+        // is what makes the rotation read as deliberate rather than idle. A
+        // touch of blur clears as each arrives — the eye settling on them the
+        // way a lens racks focus onto whatever has just entered frame.
         .to([railLeft.current, railRight.current], { autoAlpha: 1, ease: "none", duration: 0.1 }, 0.5)
+        .to([railLeft.current, railRight.current], { filter: "blur(0px)", ease: "power2.out", duration: 0.12 }, 0.5)
+        .set([railLeft.current, railRight.current], { filter: "none" }, 0.62)
         .to(railLeft.current, { yPercent: -26, ease: "none", duration: 0.4 }, 0.5)
         .to(railRight.current, { yPercent: 22, ease: "none", duration: 0.4 }, 0.5)
         .to([railLeft.current, railRight.current], { autoAlpha: 0, ease: "none", duration: 0.08 }, 0.9)
@@ -301,7 +370,15 @@ export function Hero() {
     }, element);
 
     return () => ctx.revert();
-  }, [t.hero.lines.length]);
+    // Rebuilt whenever the language changes, not only on mount: the letters
+    // above are queried straight from the DOM, and a manual language switch
+    // replaces every one of them with a different alphabet's glyphs in a
+    // different count. `ScrollTrigger.create` syncs a freshly built scrub
+    // timeline to whatever the current scroll position already implies in
+    // the same tick it is created, so a visitor mid-scroll when they toggle
+    // the switch sees the timeline resume exactly where it was, not reset to
+    // the top of the blast.
+  }, [locale]);
 
   /**
    * The same three planes, answering the pointer.
@@ -396,11 +473,21 @@ export function Hero() {
    * own layer is untouched by that timeline, so a slow, independent pulse
    * here is free — and it is the one thing that keeps the opening from ever
    * reading as a paused video rather than a room someone is standing in.
+   *
+   * Paused the moment the hero leaves the viewport. This section is mounted
+   * for the life of the page, and a loop plus the light sweep below left two
+   * animations running under every other section too — free-floating work
+   * the compositor paid for on every frame, whatever the visitor was actually
+   * looking at, and the reason the hero itself felt short of frames once it
+   * was back on screen and competing with its own backlog.
    */
   useLayoutEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const node = auraLayer.current;
-    if (!node) return;
+    const sweep = sweepRef.current;
+    const raysNode = rays.current;
+    const element = section.current;
+    if (!node || !element) return;
 
     const tween = gsap.to(node, {
       scale: 1.06,
@@ -410,7 +497,38 @@ export function Hero() {
       repeat: -1,
     });
 
+    // The sweep answers scroll speed while the hero is on screen — the same
+    // `--scroll-kick` pattern the header uses — so the light reacts to the
+    // gesture instead of only ever running its own slow clock. Read, never
+    // written, while the hero is off screen: no reason to keep polling
+    // velocity for a light nobody can see.
+    let visible = true;
+    const stopTick = onTick(() => {
+      if (!visible || !sweep) return;
+      const kick = Math.min(1, Math.abs(getScrollVelocity()) / 30);
+      sweep.style.setProperty("--sweep-kick", kick.toFixed(3));
+    });
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting;
+        if (entry.isIntersecting) {
+          tween.play();
+          sweep?.classList.remove("paused");
+          raysNode?.classList.remove("paused");
+        } else {
+          tween.pause();
+          sweep?.classList.add("paused");
+          raysNode?.classList.add("paused");
+        }
+      },
+      { threshold: 0 }
+    );
+    observer.observe(element);
+
     return () => {
+      observer.disconnect();
+      stopTick();
       tween.kill();
     };
   }, []);
@@ -469,27 +587,6 @@ export function Hero() {
     const frame = requestAnimationFrame(() => node.classList.remove("invisible"));
     return () => cancelAnimationFrame(frame);
   }, []);
-
-  /**
-   * The headline retranslates through noise, not a crossfade.
-   *
-   * Only after the first paint: on mount there is no "before" for a switch
-   * to be a switch from, and the title is still invisible behind the loader
-   * regardless. `useLayoutEffect` so the scramble's first frame overwrites
-   * React's own update before the browser ever paints the plain new text.
-   */
-  const settledOnce = useRef(false);
-  useLayoutEffect(() => {
-    if (!settledOnce.current) {
-      settledOnce.current = true;
-      return;
-    }
-    const stops = lines.current.map((node, i) =>
-      node ? scrambleTo(node, t.hero.lines[i]) : undefined
-    );
-    return () => stops.forEach((stop) => stop?.());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale]);
 
   /**
    * The opening chrome arrives as the loader lifts, not on mount, where it
@@ -559,6 +656,37 @@ export function Hero() {
             />
           </div>
 
+          {/* A burst of light behind the product, the room's own colour read
+              as rays rather than a flat glow. */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[1] grid place-items-center">
+            <div ref={rays} className="hero-rays h-[130svh] w-[130svh]" />
+          </div>
+
+          {/* Motes drifting through the light the rays cast — the one texture
+              that says this is a room with air in it. */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[4] overflow-hidden">
+            {DUST.map((mote, i) => (
+              <span
+                key={i}
+                className="hero-dust absolute"
+                style={{
+                  left: `${mote.left}%`,
+                  top: `${mote.top}%`,
+                  width: mote.size,
+                  height: mote.size,
+                  "--drift-x": mote.driftX,
+                  "--drift-y": mote.driftY,
+                  "--drift-delay": mote.delay,
+                } as CSSProperties}
+              />
+            ))}
+          </div>
+
+          {/* The camera catching the moment of impact. Full-bleed, gone in a
+              handful of frames — long enough to read as a flash, never long
+              enough to read as a wash of colour over the scene. */}
+          <div ref={flash} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[15] bg-white" />
+
           {/* Shockwave. Behind the product, so the object itself stays crisp
               while the rings it displaced run out past the frame. */}
           <div
@@ -584,19 +712,20 @@ export function Hero() {
           >
             {t.hero.lines.map((line, i) => (
               <span
-                key={line}
-                ref={(node) => {
-                  if (node) lines.current[i] = node;
-                }}
+                key={i}
                 aria-hidden="true"
                 // The middle line is set as an outline. One word in a different
                 // typographic voice is enough to stop a stacked block reading as
                 // a single flat slab of weight.
-                className={`stack block text-[clamp(3rem,11.5vw,10.5rem)] will-change-transform ${
+                className={`stack block text-[clamp(3rem,11.5vw,10.5rem)] ${
                   i === 1 ? "outline-type" : "text-ink"
                 }`}
               >
-                {line}
+                {Array.from(line).map((char, j) => (
+                  <span key={j} data-letter className="inline-block will-change-transform">
+                    {char === " " ? " " : char}
+                  </span>
+                ))}
               </span>
             ))}
           </h1>
@@ -611,6 +740,20 @@ export function Hero() {
               className="relative grid place-items-center will-change-transform"
               style={{ transformStyle: "preserve-3d" }}
             >
+              {/* A pool of light under the product, flattened into an
+                  ellipse. Not a mirrored copy of the sequence — the frames
+                  are photographs, not geometry, so there is nothing to
+                  reflect honestly — just enough of a shadow-that-glows to
+                  say the object is standing on something, not floating on
+                  flat colour. */}
+              <div
+                aria-hidden="true"
+                ref={floor}
+                className="pointer-events-none absolute top-[78%] left-1/2 h-[14svh] w-[52svh] -translate-x-1/2 rounded-[100%]"
+                style={{
+                  background: `radial-gradient(ellipse at center, ${heroAccent}40 0%, ${heroAccent}14 55%, transparent 78%)`,
+                }}
+              />
               <SequencePlayer
                 product={HERO_PRODUCT}
                 progress={progress}
@@ -620,6 +763,7 @@ export function Hero() {
                   something reflective standing in a room rather than a flat
                   picture of one. */}
               <div
+                ref={sweepRef}
                 aria-hidden="true"
                 className="hero-sweep pointer-events-none absolute top-1/2 left-1/2 h-[46svh] w-[46svh] -translate-x-1/2 -translate-y-1/2 rounded-full"
               />
@@ -634,7 +778,12 @@ export function Hero() {
                   ref={(node) => {
                     shards.current[i] = node;
                   }}
-                  className="absolute inset-0 border border-white/25 bg-white/[0.07] backdrop-blur-[2px] will-change-transform"
+                  // No backdrop-filter: eight simultaneous blurred panels
+                  // were real, measurable frame cost for a texture that is
+                  // barely on screen before it flies apart. A touch more
+                  // opacity keeps the frosted read without sampling anything
+                  // behind it.
+                  className="absolute inset-0 border border-white/25 bg-white/[0.12] will-change-transform"
                   style={{ clipPath: shard.clipPath }}
                 />
               ))}
@@ -648,25 +797,45 @@ export function Hero() {
           <div
             ref={spotlight}
             aria-hidden="true"
-            className="pointer-events-none absolute top-0 left-0 z-[6] h-[46svh] w-[46svh] opacity-0 mix-blend-soft-light"
+            className="pointer-events-none absolute top-0 left-0 z-[6] h-[46svh] w-[46svh] opacity-0"
             style={{
               // Margin centres the box on its own (0,0) origin instead of a
               // Tailwind translate utility, which GSAP's own x/y transform
               // would otherwise overwrite outright — inline style always
               // wins over a class, and GSAP writes `transform` directly.
               margin: "-23svh 0 0 -23svh",
-              background: "radial-gradient(circle, rgb(255 255 255 / 0.9) 0%, transparent 68%)",
+              // No blend mode: a blended layer has to be composited against
+              // its own backdrop on every frame it moves, which this element
+              // does on every pointer event. A paler, more transparent
+              // gradient reads as the same soft light for a fraction of the
+              // cost.
+              background: "radial-gradient(circle, rgb(255 255 255 / 0.5) 0%, transparent 68%)",
             }}
           />
 
-          {/* Counter-drifting rails of technical text. */}
+          {/* Counter-drifting rails of vertical type — one word per side set
+              large and outlined, the other two kept as plain caption type, so
+              each rail reads with the same weight imbalance as the rest of
+              the page rather than as a tidy evenly-set list. */}
           <div
             aria-hidden="true"
             ref={railLeft}
-            className="pointer-events-none absolute top-1/2 left-6 z-20 hidden -translate-y-1/2 flex-col gap-6 md:left-10 lg:flex"
+            className="pointer-events-none absolute top-1/2 left-6 z-20 hidden -translate-y-1/2 items-end gap-8 md:left-10 lg:flex"
           >
-            {rail.map((entry) => (
-              <span key={entry} className="tech-label block max-w-[12ch] text-ink-2">
+            <span className="mb-1 block h-36 w-px bg-line" />
+            {rail.map((entry, i) => (
+              <span
+                key={entry}
+                className={`[writing-mode:vertical-rl] ${
+                  i === 1
+                    ? "outline-type text-[clamp(3.4rem,7vw,5.8rem)] leading-none"
+                    : "tech-label text-ink-2"
+                }`}
+                style={{
+                  transform: `translateY(${RAIL_OFFSET[i]}px)`,
+                  fontSize: i === 1 ? undefined : 13,
+                }}
+              >
                 {entry}
               </span>
             ))}
@@ -674,10 +843,22 @@ export function Hero() {
           <div
             aria-hidden="true"
             ref={railRight}
-            className="pointer-events-none absolute top-1/2 right-6 z-20 hidden -translate-y-1/2 flex-col items-end gap-6 text-right md:right-10 lg:flex"
+            className="pointer-events-none absolute top-1/2 right-6 z-20 hidden -translate-y-1/2 flex-row-reverse items-end gap-8 md:right-10 lg:flex"
           >
-            {[...rail].reverse().map((entry) => (
-              <span key={entry} className="tech-label block max-w-[12ch] text-ink-2">
+            <span className="mb-1 block h-36 w-px bg-line" />
+            {rail.map((entry, i) => (
+              <span
+                key={entry}
+                className={`[writing-mode:vertical-rl] ${
+                  i === 1
+                    ? "outline-type text-[clamp(3.4rem,7vw,5.8rem)] leading-none"
+                    : "tech-label text-ink-2"
+                }`}
+                style={{
+                  transform: `translateY(${RAIL_OFFSET[i]}px) rotate(180deg)`,
+                  fontSize: i === 1 ? undefined : 13,
+                }}
+              >
                 {entry}
               </span>
             ))}

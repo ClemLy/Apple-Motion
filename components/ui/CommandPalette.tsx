@@ -8,12 +8,60 @@ import { onPaletteRequest, type PaletteMode } from "@/lib/palette";
 import { CATALOGUE } from "@/lib/catalogue";
 
 /**
+ * Every section, in the order it appears — the five products plus the
+ * opening, the line-up, the manifesto and the sign-off. Used only to work
+ * out which section a key press means "next" or "previous" relative to.
+ */
+const SECTION_ORDER = ["top", ...CATALOGUE.map((entry) => entry.anchor), "lineup", "story", "footer"];
+
+/**
+ * Which of those sections the middle of the viewport is currently over.
+ */
+function currentSectionIndex() {
+  const middle = window.scrollY + window.innerHeight / 2;
+  let found = 0;
+  SECTION_ORDER.forEach((id, i) => {
+    const box = document.getElementById(id)?.getBoundingClientRect();
+    if (box && box.top + window.scrollY <= middle) found = i;
+  });
+  return found;
+}
+
+/**
+ * Moves to the exact top of the next or previous section rather than a fixed
+ * distance — the one thing a bare `PageDown` can never do on a page where
+ * every section is a different height.
+ *
+ * The two sections after the products are mounted only once a visitor has
+ * nearly scrolled to them (see `LazyMount`), so a jump landing exactly on
+ * that boundary can occasionally ask for an element that does not exist yet.
+ * Falling back to one viewport's worth of scroll keeps the key from ever
+ * doing nothing.
+ */
+function jumpToSection(delta: 1 | -1) {
+  const from = currentSectionIndex();
+  const to = Math.max(0, Math.min(SECTION_ORDER.length - 1, from + delta));
+  const target = document.getElementById(SECTION_ORDER[to]);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else {
+    window.scrollBy({ top: delta * window.innerHeight, behavior: "smooth" });
+  }
+}
+
+/**
  * One overlay, two things it can show.
  *
  * `/` opens a jump list to any product; `?` opens the same panel showing what
  * every key on the page does. They share a shell — a dimmed backdrop and one
  * centred card — because they are the same kind of moment for a visitor: a
  * pause to ask the page a question, answered without leaving where they were.
+ *
+ * The same listener also owns section-to-section keyboard travel: the arrow
+ * keys and Page Up/Down, remapped from the browser's fixed-distance scroll to
+ * the exact top of the next or previous section, and Home/End to the very
+ * first and last. A page built from sections this differently sized is
+ * exactly where the browser's default falls shortest.
  */
 export function CommandPalette() {
   const { t } = useI18n();
@@ -73,6 +121,23 @@ export function CommandPalette() {
       } else if (event.key === "?") {
         event.preventDefault();
         setMode("shortcuts");
+      } else if (event.key === "ArrowDown" || event.key === "PageDown") {
+        event.preventDefault();
+        jumpToSection(1);
+      } else if (event.key === "ArrowUp" || event.key === "PageUp") {
+        event.preventDefault();
+        jumpToSection(-1);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        document.getElementById(SECTION_ORDER[0])?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (event.key === "End") {
+        event.preventDefault();
+        const last = document.getElementById(SECTION_ORDER[SECTION_ORDER.length - 1]);
+        if (last) {
+          last.scrollIntoView({ behavior: "smooth", block: "end" });
+        } else {
+          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+        }
       }
     };
 
