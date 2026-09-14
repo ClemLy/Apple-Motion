@@ -127,13 +127,19 @@ export function Nav() {
     >
       <a
         href="#main"
+        // Safari, by default, leaves plain links out of the Tab order
+        // entirely — only form controls get focus without the visitor
+        // opting into "Full Keyboard Access". An explicit `tabIndex`
+        // overrides that, which is the one thing that makes a skip link
+        // reachable by keyboard in Safari at all.
+        tabIndex={0}
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-6 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-xs focus:text-white"
       >
         {t.nav.skip}
       </a>
 
       <div className="mx-auto flex max-w-[1560px] items-center justify-between gap-6 px-6 md:px-10">
-        <a href="#top" className="flex shrink-0 items-center gap-2.5 text-ink" aria-label="Apple Motion">
+        <a href="#top" tabIndex={0} className="flex shrink-0 items-center gap-2.5 text-ink" aria-label="Apple Motion">
           <Mark className="h-[22px] w-[22px]" />
           <span className="hidden text-[13px] font-semibold tracking-[-0.015em] sm:block">
             Apple Motion
@@ -157,6 +163,7 @@ export function Nav() {
               <a
                 key={entry.id}
                 href={`#${entry.anchor}`}
+                tabIndex={0}
                 ref={(node) => {
                   itemRefs.current[i] = node;
                 }}
@@ -164,6 +171,8 @@ export function Nav() {
                 // Starts with the visible number, so the spoken name matches
                 // what a voice-control user reads on screen.
                 aria-label={`${String(i + 1).padStart(2, "0")} ${name}`}
+                data-cursor="view"
+                data-cursor-label={t.cursor.view}
                 className={`group relative flex items-center gap-2 rounded-full px-3 py-1.5 transition-colors duration-300 ${
                   isActive ? "text-ink" : "text-ink-2 hover:text-ink"
                 }`}
@@ -277,6 +286,7 @@ function MobileTrack({ active }: { active: number }) {
           <a
             key={product.id}
             href={`#${product.anchor}`}
+            tabIndex={0}
             aria-label={`${String(i + 1).padStart(2, "0")} ${product.stack.join(" ")}`}
             aria-current={i === active ? "true" : undefined}
             // The dot itself stays tiny by design — the padding is what

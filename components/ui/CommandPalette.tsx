@@ -246,6 +246,7 @@ export function CommandPalette() {
                       itemRefs.current[i] = node;
                     }}
                     href={`#${entry.anchor}`}
+                    tabIndex={0}
                     onPointerEnter={() => setHighlight(i)}
                     onClick={(event) => {
                       event.preventDefault();

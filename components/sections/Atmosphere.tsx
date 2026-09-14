@@ -23,23 +23,51 @@ import type { ProductId } from "@/lib/products";
  * All of it is decorative and hidden from assistive technology.
  */
 
-/** The soft, slowly orbiting pool of the product's own colour. */
+/**
+ * The soft, slowly orbiting pool of the product's own colour — and, behind
+ * it, a second, quieter one on the far side of the room.
+ *
+ * One glow reads as a light source; two, drifting at different speeds and
+ * never in phase, read as a room with air moving through it — the same
+ * reasoning behind the hero's rays and motes, just sized for a room that
+ * lasts four viewport heights instead of one. The second blob is set well
+ * below the first in opacity and given a longer, offset period so the two
+ * never appear to synchronise, which is what would make the pair read as one
+ * mechanical loop instead of two independent things.
+ */
 export function AuraGlow({ accent, side }: { accent: string; side: "left" | "right" }) {
+  const far = side === "left" ? "right" : "left";
   return (
-    <div
-      aria-hidden="true"
-      className={`pointer-events-none absolute top-1/2 z-0 h-[120svh] w-[120svh] -translate-y-1/2 ${
-        side === "left" ? "left-[-20svh]" : "right-[-20svh]"
-      }`}
-    >
+    <>
       <div
-        className="aura-drift h-full w-full"
-        style={{
-          background: `radial-gradient(circle at 50% 50%, ${accent}2e 0%, ${accent}14 38%, transparent 68%)`,
-          animation: "auraDrift 22s ease-in-out infinite",
-        }}
-      />
-    </div>
+        aria-hidden="true"
+        className={`pointer-events-none absolute top-1/2 z-0 h-[120svh] w-[120svh] -translate-y-1/2 ${
+          side === "left" ? "left-[-20svh]" : "right-[-20svh]"
+        }`}
+      >
+        <div
+          className="aura-drift h-full w-full"
+          style={{
+            background: `radial-gradient(circle at 50% 50%, ${accent}2e 0%, ${accent}14 38%, transparent 68%)`,
+            animation: "auraDrift 22s ease-in-out infinite",
+          }}
+        />
+      </div>
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute top-[15%] z-0 hidden h-[80svh] w-[80svh] md:block ${
+          far === "left" ? "left-[-14svh]" : "right-[-14svh]"
+        }`}
+      >
+        <div
+          className="aura-drift h-full w-full"
+          style={{
+            background: `radial-gradient(circle at 50% 50%, ${accent}18 0%, transparent 62%)`,
+            animation: "auraDrift 31s ease-in-out infinite -9s",
+          }}
+        />
+      </div>
+    </>
   );
 }
 

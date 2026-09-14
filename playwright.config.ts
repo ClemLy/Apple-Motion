@@ -17,19 +17,34 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    launchOptions: {
-      args: [
-        // CI runners have no GPU. SwiftShader renders the same image, slowly —
-        // which is enough to catch a scene that has stopped drawing at all.
-        "--enable-unsafe-swiftshader",
-        "--ignore-gpu-blocklist",
-      ],
-    },
   },
 
+  // Chromium-only launch flags: CI runners have no GPU, and SwiftShader
+  // renders the same image, slowly — enough to catch a scene that has
+  // stopped drawing at all. WebKit doesn't take these arguments, so they
+  // live on the two Chromium projects rather than globally.
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    {
+      name: "desktop",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+        launchOptions: { args: ["--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] },
+      },
+    },
+    {
+      name: "mobile",
+      use: {
+        ...devices["Pixel 7"],
+        launchOptions: { args: ["--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] },
+      },
+    },
+    // The one engine the rest of the suite never touches: no Chromium
+    // flags, and the properties this site leans on hardest —
+    // `-webkit-text-stroke`, `mask-composite`, `backdrop-filter`,
+    // `writing-mode` — are exactly the ones with the longest history of
+    // engine-specific quirks.
+    { name: "safari", use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } } },
   ],
 
   webServer: {

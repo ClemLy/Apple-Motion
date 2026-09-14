@@ -27,6 +27,7 @@ export const en = {
 
   cursor: {
     product: "Scroll",
+    view: "View",
   },
 
   sound: {
@@ -263,6 +264,23 @@ export const en = {
     languageSwitch: "Change language",
     reducedMotion: "Reduced motion is on. Animations are simplified.",
   },
+
+  notFound: {
+    eyebrow: "Error 404",
+    word: "Lost.",
+    title: ["Wrong", "angle."],
+    body: "Every product on the tour is still exactly where you left it. This page just isn't one of them.",
+    cta: "Back to the tour",
+  },
+
+  errorPage: {
+    eyebrow: "Something broke",
+    word: "Static.",
+    title: ["Signal", "lost."],
+    body: "Not you — something on this end. The rest of the tour is unaffected.",
+    retry: "Try again",
+    cta: "Back to the tour",
+  },
 };
 
 export const fr: Dictionary = {
@@ -281,6 +299,7 @@ export const fr: Dictionary = {
 
   cursor: {
     product: "Défiler",
+    view: "Voir",
   },
 
   sound: {
@@ -514,6 +533,23 @@ export const fr: Dictionary = {
   a11y: {
     languageSwitch: "Changer de langue",
     reducedMotion: "Le mouvement réduit est activé. Les animations sont simplifiées.",
+  },
+
+  notFound: {
+    eyebrow: "Erreur 404",
+    word: "Perdu.",
+    title: ["Mauvais", "angle."],
+    body: "Chaque produit du parcours est resté exactement là où vous l'avez laissé. Cette page, elle, n'en fait pas partie.",
+    cta: "Retour au parcours",
+  },
+
+  errorPage: {
+    eyebrow: "Une erreur est survenue",
+    word: "Statique.",
+    title: ["Signal", "perdu."],
+    body: "Pas vous — quelque chose de notre côté. Le reste du parcours n'est pas affecté.",
+    retry: "Réessayer",
+    cta: "Retour au parcours",
   },
 };
 

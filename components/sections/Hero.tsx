@@ -413,10 +413,15 @@ export function Hero() {
         : []
     );
 
+    // `rotationX`/`rotationY`, not the `rotateX`/`rotateY` aliases: the
+    // scroll timeline's own `gsap.context(...).revert()` runs against this
+    // whole section on cleanup, and reverting a property set through the
+    // aliased name is what GSAP was logging "not eligible for reset" about.
+    // Same rotation, the name GSAP actually owns cleanly.
     const tilt = productLayer.current
       ? {
-          x: gsap.quickTo(productLayer.current, "rotateY", { duration: 0.9, ease: "power3.out" }),
-          y: gsap.quickTo(productLayer.current, "rotateX", { duration: 0.9, ease: "power3.out" }),
+          x: gsap.quickTo(productLayer.current, "rotationY", { duration: 0.9, ease: "power3.out" }),
+          y: gsap.quickTo(productLayer.current, "rotationX", { duration: 0.9, ease: "power3.out" }),
         }
       : null;
 

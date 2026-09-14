@@ -7,6 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { useI18n } from "@/lib/i18n/context";
 import { useRoomClaim } from "@/lib/use-room-scene";
+import { useVelocityStretch } from "@/lib/use-velocity-stretch";
 import { roomStyle } from "@/lib/theme";
 import { CATALOGUE, LINEUP_ROOM } from "@/lib/catalogue";
 import { Curtain } from "@/components/ui/Curtain";
@@ -51,8 +52,10 @@ export function Lineup() {
   const { t } = useI18n();
   const section = useRef<HTMLElement>(null);
   const grid = useRef<HTMLDivElement>(null);
+  const headline = useRef<HTMLHeadingElement>(null);
 
   useRoomClaim(section, LINEUP_ROOM);
+  useVelocityStretch(headline);
 
   useLayoutEffect(() => {
     const element = section.current;
@@ -112,7 +115,7 @@ export function Lineup() {
                 <span className="tech-label text-ink-2">{t.lineup.eyebrow}</span>
               </div>
 
-              <h2 id="lineup-title" className="stack mt-6 text-[clamp(2.6rem,7vw,6.2rem)] text-ink">
+              <h2 ref={headline} id="lineup-title" className="stack mt-6 text-[clamp(2.6rem,7vw,6.2rem)] text-ink">
                 {t.lineup.title.map((line, i) => (
                   <span
                     key={line}
@@ -147,6 +150,7 @@ export function Lineup() {
                 <a
                   key={entry.id}
                   href={`#${entry.anchor}`}
+                  tabIndex={0}
                   data-lineup-card
                   data-cursor="view"
                   data-cursor-label={t.lineup.explore}

@@ -299,6 +299,27 @@ body {
   }
 }
 
+/* The corner mark every tile keeps in reserve: closed by default, so the
+   grid reads as calm as it always has, and drawn in on hover in the
+   product's own accent — the same "this fact belongs to this object" logic
+   `AuraGlow` and `FeatureWord` already carry, just at the scale of a tile
+   rather than a room. Gated the same way as the tile's own lift: nothing to
+   reveal on a device with no hover to reveal it on. */
+.spec-tile-mark {
+  opacity: 0;
+  transform: scale(0.3);
+  transition:
+    opacity 260ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 260ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (hover: hover) {
+  .spec-tile:hover .spec-tile-mark {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* ---- cursor ------------------------------------------------------------- */
 
 /* Only drawn where there is a real pointer to replace. */
@@ -448,6 +469,25 @@ body {
 .progress-rail {
   --rail-gap: 12px;
   transition: opacity 500ms ease;
+}
+
+/* A wider hit area than the hairlines themselves suggest, and only where a
+   drag actually makes sense: a fine pointer, not a touchscreen fighting the
+   page's own scroll gesture for the same input. `pointer-events` flips to
+   `auto` here rather than on the Tailwind utility, so the rail stays inert
+   — and never intercepts a tap meant for whatever sits behind it — on every
+   device this condition doesn't match. */
+@media (pointer: fine) {
+  .progress-rail {
+    pointer-events: auto;
+    cursor: grab;
+    padding: 12px;
+    margin: -12px;
+  }
+
+  .progress-rail[data-dragging="true"] {
+    cursor: grabbing;
+  }
 }
 
 .progress-rail-row + .progress-rail-row {

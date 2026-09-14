@@ -126,3 +126,12 @@ export const LINEUP_ROOM: Room = { bg: "#e9e7e3", ghost: "#f6f5f2", accent: "#8c
  * itself.
  */
 export const STORY_ROOM: Room = { bg: "#141417", ghost: "#1f1f24", accent: "#c9dcee", dark: true };
+
+/**
+ * Off the tour entirely — 404 and the runtime error boundary.
+ *
+ * Darker and quieter than every room on the tour itself, and deliberately
+ * without a product's own colour: nothing here belongs to any of the five
+ * objects, because the visitor currently isn't looking at any of them.
+ */
+export const OFF_TOUR_ROOM: Room = { bg: "#0d0d0f", ghost: "#19191c", accent: "#6ba3d6", dark: true };

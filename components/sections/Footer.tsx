@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { useI18n } from "@/lib/i18n/context";
+import { useVelocityStretch } from "@/lib/use-velocity-stretch";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { Mark } from "@/components/ui/Nav";
 import { Curtain } from "@/components/ui/Curtain";
@@ -15,6 +16,9 @@ export function Footer() {
   const { t } = useI18n();
   const root = useRef<HTMLElement>(null);
   const letters = useRef<(HTMLSpanElement | null)[]>([]);
+  const headline = useRef<HTMLHeadingElement>(null);
+
+  useVelocityStretch(headline);
 
   useLayoutEffect(() => {
     const element = root.current;
@@ -133,7 +137,7 @@ export function Footer() {
 
       <div className="mx-auto max-w-[1560px] px-6 pt-20 pb-10 md:px-10 md:pt-28">
         <div className="flex flex-col gap-12 lg:flex-row lg:items-end lg:justify-between">
-          <h2 className="stack text-[clamp(2.8rem,9vw,7.5rem)]">
+          <h2 ref={headline} className="stack text-[clamp(2.8rem,9vw,7.5rem)]">
             {t.footer.title.map((line, i) => (
               <span
                 key={line}
@@ -170,8 +174,11 @@ export function Footer() {
             </p>
 
             <MagneticButton
+              href={PORTFOLIO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              tabIndex={0}
               className="group inline-flex items-center gap-3 self-start rounded-full bg-white px-7 py-4 text-[13px] font-medium text-[#0b0b0d] transition-colors duration-300 hover:bg-white/90 lg:self-end"
-              onClick={() => window.open(PORTFOLIO_URL, "_blank", "noopener,noreferrer")}
             >
               {t.footer.cta}
               <svg viewBox="0 0 14 14" className="h-3 w-3" aria-hidden="true">

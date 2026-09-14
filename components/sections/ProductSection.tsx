@@ -7,6 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useI18n } from "@/lib/i18n/context";
 import { useSectionScroll } from "@/lib/use-section-scroll";
 import { useRecede } from "@/lib/use-room-scene";
+import { useVelocityStretch } from "@/lib/use-velocity-stretch";
 import { roomStyle } from "@/lib/theme";
 import { playTick } from "@/lib/sound";
 import { SequencePlayer } from "@/components/sequence/SequencePlayer";
@@ -96,6 +97,7 @@ export function ProductSection({
   const scene = useRef<HTMLDivElement>(null);
   const rail = useRef<HTMLDivElement>(null);
   const railFill = useRef<HTMLSpanElement>(null);
+  const headline = useRef<HTMLHeadingElement>(null);
   const progress = useRef(range[0]);
 
   useSectionScroll({
@@ -107,6 +109,7 @@ export function ProductSection({
     onEnter: playTick,
   });
   useRecede(scene);
+  useVelocityStretch(headline);
 
   useLayoutEffect(() => {
     const element = section.current;
@@ -298,7 +301,7 @@ export function ProductSection({
               <div ref={overview} data-copy-beat className="absolute inset-x-0 top-0">
                 <SectionMark index={copy.index} text={copy.tagline} />
 
-                <h2 className="stack mt-4 text-[clamp(2.2rem,5.4vw,4.2rem)] text-ink md:mt-6">
+                <h2 ref={headline} className="stack mt-4 text-[clamp(2.2rem,5.4vw,4.2rem)] text-ink md:mt-6">
                   {entry.stack.map((line, i) => (
                     <span
                       key={line}
@@ -321,7 +324,17 @@ export function ProductSection({
                     rather than a page torn from a manual. */}
                 <div className="mt-6 grid grid-cols-3 gap-2 md:mt-7">
                   {copy.callouts.map((callout) => (
-                    <div key={callout.label} className="spec-tile flex flex-col gap-1.5">
+                    <div
+                      key={callout.label}
+                      className="spec-tile relative flex flex-col gap-1.5"
+                      data-cursor="view"
+                      data-cursor-label={t.cursor.view}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="spec-tile-mark absolute top-2 right-2 h-1.5 w-1.5 rounded-full"
+                        style={{ background: entry.accent }}
+                      />
                       <span className="tech-label text-ink-2">{callout.label}</span>
                       <span className="text-[12px] leading-snug font-medium text-ink">{callout.note}</span>
                     </div>
@@ -360,7 +373,17 @@ export function ProductSection({
                     a time instead of a column to be read top to bottom. */}
                 <dl className="mt-4 grid grid-cols-2 gap-2 md:mt-6">
                   {copy.specs.map((spec) => (
-                    <div key={spec.label} className="spec-tile flex flex-col gap-1">
+                    <div
+                      key={spec.label}
+                      className="spec-tile relative flex flex-col gap-1"
+                      data-cursor="view"
+                      data-cursor-label={t.cursor.view}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="spec-tile-mark absolute top-2 right-2 h-1.5 w-1.5 rounded-full"
+                        style={{ background: entry.accent }}
+                      />
                       <dt className="tech-label text-ink-2">{spec.label}</dt>
                       <dd className="text-[12.5px] leading-snug font-medium tracking-[-0.01em] text-ink">
                         {spec.value}

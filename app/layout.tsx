@@ -49,6 +49,13 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
   },
+  // The whole site is one page — nothing here needs deduplicating against a
+  // paginated or parameterised variant of itself — but a search engine still
+  // treats the absence of this tag as ambiguity to resolve on its own rather
+  // than as "there is only one URL." Stating it removes the guess.
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export const viewport: Viewport = {
@@ -61,10 +68,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <head>
         {/* The loader's whole job is to hold the page until this exact frame
-            has arrived — discoverable straight from the HTML, so the browser
+            has arrived. Discoverable straight from the HTML, so the browser
             can start fetching it before any JS has run, rather than waiting
-            for the sequence loader to request it itself. */}
-        <link rel="preload" as="image" href={`/sequences/${HERO_PRODUCT}/000.webp`} fetchPriority="high" />
+            for the sequence loader to request it itself.
+
+            `as="fetch"` because that is genuinely how it gets requested: the
+            sequence loader reads every frame through `fetch()` to control
+            decoding itself, not through an `<img>` tag. `as="image"` would
+            populate a cache keyed to a request destination this page never
+            makes, so the browser would fetch the frame twice: once for the
+            unused preload, once for real. `crossOrigin` is required for any
+            fetch-destination preload to match, even same-origin. */}
+        <link
+          rel="preload"
+          as="fetch"
+          crossOrigin="anonymous"
+          href={`/sequences/${HERO_PRODUCT}/000.webp`}
+          fetchPriority="high"
+        />
       </head>
       <body>{children}</body>
     </html>

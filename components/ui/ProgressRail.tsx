@@ -108,6 +108,57 @@ export function ProgressRail() {
     };
   }, []);
 
+  /**
+   * The rail doubles as a scrollbar: grab it anywhere and the page follows
+   * the pointer's position within it, live, the whole way — not only once
+   * the pointer is released. Mouse-only (`pointer: fine`): the rail is a
+   * compact target next to the edge of the screen, exactly the kind of small
+   * precise hit-test a touch drag would fight with the page's own scroll
+   * gesture over, and every product it can reach is already one scroll or a
+   * keyboard shortcut away.
+   */
+  useEffect(() => {
+    const element = root.current;
+    if (!element) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+
+    let dragging = false;
+
+    const scrollToPointer = (clientY: number) => {
+      const box = element.getBoundingClientRect();
+      const fraction = Math.min(1, Math.max(0, (clientY - box.top) / box.height));
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      window.scrollTo(0, fraction * max);
+    };
+
+    const onDown = (event: PointerEvent) => {
+      dragging = true;
+      element.setPointerCapture(event.pointerId);
+      element.dataset.dragging = "true";
+      scrollToPointer(event.clientY);
+    };
+    const onMove = (event: PointerEvent) => {
+      if (dragging) scrollToPointer(event.clientY);
+    };
+    const onUp = (event: PointerEvent) => {
+      dragging = false;
+      element.dataset.dragging = "false";
+      if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId);
+    };
+
+    element.addEventListener("pointerdown", onDown);
+    element.addEventListener("pointermove", onMove);
+    element.addEventListener("pointerup", onUp);
+    element.addEventListener("pointercancel", onUp);
+
+    return () => {
+      element.removeEventListener("pointerdown", onDown);
+      element.removeEventListener("pointermove", onMove);
+      element.removeEventListener("pointerup", onUp);
+      element.removeEventListener("pointercancel", onUp);
+    };
+  }, []);
+
   return (
     <div
       ref={root}
