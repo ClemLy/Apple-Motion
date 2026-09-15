@@ -268,11 +268,17 @@ export function ProductSection({
               narrowest products (a phone has almost no width to fill). Keeping
               them adjacent is what the reference layouts actually do: the two
               pieces read as one composition, not two unrelated islands. */}
-          <div className="relative z-10 flex h-full flex-col px-6 pt-[74px] pb-6 md:flex-row md:items-start md:justify-center md:gap-14 md:px-10 md:pt-0 md:pb-0 lg:gap-24">
+          <div className="relative z-10 flex h-full flex-col px-6 pt-[74px] pb-4 md:flex-row md:items-start md:justify-center md:gap-14 md:px-10 md:pt-0 md:pb-0 lg:gap-24">
             {/* --- the product, and the annotations that point at it --- */}
+            {/* Small on purpose below `md`: this same box has to leave room for
+                the tallest of the three copy beats below it (the full ten-tile
+                specification), and there is only one viewport's height to split
+                between the two. A phone gets a smaller product and copy that
+                actually fits; a tablet or up gets the full-size product because
+                there the two sit side by side instead of stacked. */}
             <div
               ref={productStage}
-              className={`relative h-[30svh] shrink-0 md:mt-36 md:h-[66svh] ${
+              className={`relative h-[17svh] shrink-0 md:mt-36 md:h-[66svh] ${
                 productLeft ? "md:order-1" : "md:order-2"
               }`}
             >
@@ -290,10 +296,18 @@ export function ProductSection({
                 at once, which defeats the entire structure. A min-height stands
                 in for the space the absolutely-positioned beats no longer claim
                 themselves now that this column is a flex item and needs a real
-                size to align against, not just a top offset. */}
+                size to align against, not just a top offset.
+
+                62svh below `md`, not the ~46svh this once was: the specification
+                beat's ten tiles, and even the overview beat's headline plus lede
+                plus three callouts, measured taller than that on a real phone in
+                both languages — this box was clipping the bottom of both beats
+                on any screen under about 400px tall. Sized against the tallest
+                beat actually measured, the same discipline `DetailShot` already
+                uses for its own placement, not against a guess. */}
             <div
               data-copy-column
-              className={`relative mt-6 h-[46svh] shrink-0 md:mt-36 md:h-auto md:min-h-[54svh] md:w-full md:max-w-104 ${
+              className={`relative mt-3 h-[62svh] shrink-0 md:mt-36 md:h-auto md:min-h-[54svh] md:w-full md:max-w-104 ${
                 productLeft ? "md:order-2" : "md:order-1"
               }`}
             >
@@ -301,7 +315,7 @@ export function ProductSection({
               <div ref={overview} data-copy-beat className="absolute inset-x-0 top-0">
                 <SectionMark index={copy.index} text={copy.tagline} />
 
-                <h2 ref={headline} className="stack mt-4 text-[clamp(2.2rem,5.4vw,4.2rem)] text-ink md:mt-6">
+                <h2 ref={headline} className="stack mt-3 text-[clamp(2.2rem,5.4vw,4.2rem)] text-ink md:mt-6">
                   {entry.stack.map((line, i) => (
                     <span
                       key={line}
@@ -314,7 +328,7 @@ export function ProductSection({
                   ))}
                 </h2>
 
-                <p className="mt-4 text-[13.5px] leading-[1.7] text-ink-2 md:mt-6 md:text-[15.5px]">
+                <p className="mt-3 text-[13.5px] leading-[1.4] text-ink-2 md:mt-6 md:text-[15.5px] md:leading-[1.7]">
                   {copy.lede}
                 </p>
 
@@ -322,11 +336,11 @@ export function ProductSection({
                     annotations give the photo, set here as small boxed facts
                     rather than a list — the column reads as a dashboard
                     rather than a page torn from a manual. */}
-                <div className="mt-6 grid grid-cols-3 gap-2 md:mt-7">
+                <div className="mt-3 grid grid-cols-3 gap-2 md:mt-7">
                   {copy.callouts.map((callout) => (
                     <div
                       key={callout.label}
-                      className="spec-tile relative flex flex-col gap-1.5"
+                      className="spec-tile relative flex flex-col gap-1 md:gap-1.5"
                       data-cursor="view"
                       data-cursor-label={t.cursor.view}
                     >
@@ -371,7 +385,7 @@ export function ProductSection({
                     densest block of text on the page, and a grid of small
                     boxed facts breaks it into pieces the eye can take one at
                     a time instead of a column to be read top to bottom. */}
-                <dl className="mt-4 grid grid-cols-2 gap-2 md:mt-6">
+                <dl className="mt-3 grid grid-cols-2 gap-2 md:mt-6">
                   {copy.specs.map((spec) => (
                     <div
                       key={spec.label}

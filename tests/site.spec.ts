@@ -204,6 +204,46 @@ test.describe("Apple Motion", () => {
     expect(spilled).toEqual([]);
   });
 
+  test("every product section's copy fits its box on a real small phone", async ({ page }) => {
+    // A product section's three copy beats are `position: absolute` inside a
+    // fixed-height column, stacked to replace one another during the scroll.
+    // An absolutely positioned element never clips its own overflow and
+    // never reports as taller than itself, so the "clipping" check above —
+    // built to catch an element whose own box is too small for its own text
+    // — cannot see this failure mode at all: content silently running past
+    // the bottom of an ancestor that clips it. Caught first on a real phone,
+    // not in this suite, because the mobile project's own viewport (Pixel 7,
+    // 412x915) has meaningfully more room than a compact phone in a
+    // visitor's actual hand — this test sets its own, deliberately tighter
+    // one rather than trusting whichever project happens to run it.
+    await page.setViewportSize({ width: 375, height: 667 });
+    await ready(page);
+
+    for (const locale of ["en", "fr"] as const) {
+      if (locale === "fr") {
+        await page.getByRole("button", { name: "fr", exact: true }).click();
+        await page.waitForTimeout(1_200);
+      }
+
+      const overflowing = await page.evaluate(() => {
+        const offenders: string[] = [];
+        for (const column of document.querySelectorAll<HTMLElement>("[data-copy-column]")) {
+          const colBox = column.getBoundingClientRect();
+          for (const beat of column.querySelectorAll<HTMLElement>("[data-copy-beat]")) {
+            const over = beat.scrollHeight - colBox.height;
+            if (over > 2) {
+              offenders.push(
+                `${column.closest("section")?.id ?? "?"} / ${beat.textContent?.slice(0, 24)}: ${Math.round(over)}px over`
+              );
+            }
+          }
+        }
+        return offenders;
+      });
+      expect(overflowing, `locale: ${locale}`).toEqual([]);
+    }
+  });
+
   test("the room changes colour as products take over", async ({ page }) => {
     await ready(page);
 
